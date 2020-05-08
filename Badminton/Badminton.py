@@ -1,7 +1,7 @@
-from utilities.utils import *
-from utilities.datasets import *
-from utilities.parse_config import *
-from utilities.models import *
+from Badminton.utilities.utils import *
+from Badminton.utilities.datasets import *
+from Badminton.utilities.parse_config import *
+from Badminton.utilities.models import *
 
 import os, sys, time, datetime, random
 import torch
@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
 
-class Badminton:
-	def __init__(self, config_path='config/yolov3.cfg', weights_path='config/yolov3.weights', class_path='config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
+class Detector:
+	def __init__(self, config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
 		self.config_path = config_path
 		self.weights_path = weights_path
 		self.class_path = class_path
