@@ -10,8 +10,8 @@ from PIL import Image
 
 # from parse_config import *
 # from utils import *
-from utilities.parse_config import *
-from utilities.utils import build_targets
+from Badminton.utilities.parse_config import *
+from Badminton.utilities.utils import build_targets
 from collections import defaultdict
 
 ##import matplotlib.pyplot as plt
