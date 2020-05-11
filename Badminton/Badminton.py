@@ -12,6 +12,7 @@ from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
+import cv2
 
 class Detector:
 	def __init__(self, config_folder = "Badminton/config",config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
@@ -23,7 +24,12 @@ class Detector:
 		self.nms_thres = nms_thres
 		self.config_folder = config_folder
 
-	def detect_image(self,model,img):
+	def detect_image(self,model,img,PIL_image_flag = True):
+
+		if PIL_image_flag == False:
+			# You may need to convert the color.
+			img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+			img = Image.fromarray(img)
 		self.img = img
 
 		# scale and pad image
@@ -54,7 +60,8 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players(self,img_path):
+	def detect_players_image(self,img_path=None,img=None,display_detection = True):
+
 		# Load model and weights
 		isFile = os.path.isfile(self.weights_path)
 		if isFile == False:
@@ -73,85 +80,209 @@ class Detector:
 		classes = self.load_classes(self.class_path)
 		Tensor = torch.cuda.FloatTensor
 
-		# load image and get detections
-		self.img_path = img_path
-		# img_path = "images/bad.jpg"
-		prev_time = time.time()
-		img = Image.open(self.img_path)
-		detections = self.detect_image(model,img)
-		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
-		print ('Inference Time: %s' % (inference_time))
+		if img_path is None and img is None:
+			print("Error!!! Enter either img_path or img")
+			return [-1]
+		elif img_path is not None and img is not None:
+			print("Error!!! Enter only one out of img_path and img")
+			return [-1]
+		elif img_path is not None and img is None:
+			print("Loading from image path")
+			# load image and get detections
+			self.img_path = img_path
+			# img_path = "images/bad.jpg"
+			prev_time = time.time()
+			img = Image.open(self.img_path)
+			detections = self.detect_image(model,img)
+			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
+			# print ('Inference Time: %s' % (inference_time))
+			# print(img.size)
+			img = np.array(img)
 
-		# Get bounding-box colors
-		cmap = plt.get_cmap('tab20b')
-		colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+			if display_detection == True:
+				# Get bounding-box colors
+				cmap = plt.get_cmap('tab20b')
+				colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+				plt.figure()
+				fig, ax = plt.subplots(1, figsize=(12,9))
+				ax.imshow(img)
 
-		img = np.array(img)
-		plt.figure()
-		fig, ax = plt.subplots(1, figsize=(12,9))
-		ax.imshow(img)
+			pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
+			pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
+			unpad_h = self.img_size - pad_y
+			unpad_w = self.img_size - pad_x
 
-		pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
-		pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
-		unpad_h = self.img_size - pad_y
-		unpad_w = self.img_size - pad_x
+			flag = 0
 
-		flag = 0
-
-		object_names = ['person']
-
-		if detections is not None:
-			print("The objects detected are: ")
-			unique_labels = detections[:, -1].cpu().unique()
-			n_cls_preds = len(unique_labels)
-			bbox_colors = random.sample(colors, n_cls_preds)
+			object_names = ['person']
 			coordinate=[]
-			# browse detections and draw bounding boxes
-			for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-				if classes[int(cls_pred)] in object_names:
-					box_h = ((y2 - y1) / unpad_h) * img.shape[0]
-					box_w = ((x2 - x1) / unpad_w) * img.shape[1]
-					y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
-					x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-					print("\n##########################################################\n")
-					print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
-					print("Centre_x = " + str(x1.cpu().numpy()))
-					print("Centre_y = " + str(y1.cpu().numpy()))
-					print("Height = " + str(box_h.cpu().numpy()))
-					print("Width = " + str(box_w.cpu().numpy()))
-                   			coordinate.append(x1.cpu().numpy())
-	                		coordinate.append(y1.cpu().numpy())
-	                		coordinate.append(box_w.cpu().numpy())
-	                		coordinate.append(box_h.cpu().numpy())
-					flag = 1
-					color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-					bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-					ax.add_patch(bbox)
-					plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-							bbox={'color': color, 'pad': 0})
-		else:
-			print("No objects of the desired type are detected!!\n")
+			if detections is not None and len(detections) < 4:
+				# print("The objects detected are: ")
+				unique_labels = detections[:, -1].cpu().unique()
+				n_cls_preds = len(unique_labels)
+				# browse detections and draw bounding boxes
+				for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+					if classes[int(cls_pred)] in object_names:
+						box_h = ((y2 - y1) / unpad_h) * img.shape[0]
+						box_w = ((x2 - x1) / unpad_w) * img.shape[1]
+						y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
+						x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
+						# print("\n##########################################################\n")
+						# print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
+						# print("Top_left_x = " + str(x1.cpu().numpy()))
+						# print("Top_left_y = " + str(y1.cpu().numpy()))
+						# print("Height = " + str(box_h.cpu().numpy()))
+						# print("Width = " + str(box_w.cpu().numpy()))
+						coordinate.append(x1.cpu().numpy())
+						coordinate.append(y1.cpu().numpy())
+						coordinate.append(box_w.cpu().numpy())
+						coordinate.append(box_h.cpu().numpy())
 
-		if flag == 0:
-			print("None")
-					
-		plt.axis('off')
-		print("\n##########################################################\n")
+						flag = 1
 
-		# save image
-		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
-		plt.show()
-		return coordinate
+						if display_detection == True:
+							bbox_colors = random.sample(colors, n_cls_preds)
+							color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+							bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+							ax.add_patch(bbox)
+							plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
+									bbox={'color': color, 'pad': 0})
+			else:
+				print("No objects of the desired type are detected!!\n")
 
-    def center_bottom(self, img_path):
-        self.img_path = img_path
-        coordinate = self.detect_players(img_path)
-        centerbottom = []
-        for x in range(len(coordinate)/4):
-            start = 4*(x)
-            end = start+3
-            x1, y1, box_w, box_h = coordinate[start:end]
-            y_half = y1+(float(box_w/2))
-            centerbottom.append(x1)
-            centerbottom.append(y_half)
-        return centerbottom
+			if flag == 0:
+				print("None")
+						
+			print("\n##########################################################\n")
+
+			# save image
+			# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
+			if display_detection == True:
+				plt.axis('off')
+				plt.show()
+			return coordinate
+
+		elif img_path is None and img is not None:
+			print("Loading from image")
+			# Load model and weights
+			isFile = os.path.isfile(self.weights_path)
+			if isFile == False:
+				os.chdir(self.config_folder)
+				print("Downloading the weights")
+				try:
+					os.system("./download_weights.sh")
+				except:
+					raise Exception("Not able to download the weights")
+				os.chdir("../../")
+			model = Darknet(self.config_path, img_size=self.img_size)
+			model.load_weights(self.weights_path)
+			model.cuda()
+			model.eval()
+
+			classes = self.load_classes(self.class_path)
+			Tensor = torch.cuda.FloatTensor
+
+			# load image and get detections
+			prev_time = time.time()
+			detections = self.detect_image(model=model, img=img, PIL_image_flag=False)
+			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
+			print ('Inference Time: %s' % (inference_time))
+			# print(img.size)
+			img = np.array(img)
+
+			if display_detection == True:
+				# Get bounding-box colors
+				cmap = plt.get_cmap('tab20b')
+				colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+				plt.figure()
+				fig, ax = plt.subplots(1, figsize=(12,9))
+				ax.imshow(img)
+
+			pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
+			pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
+			unpad_h = self.img_size - pad_y
+			unpad_w = self.img_size - pad_x
+
+			flag = 0
+
+			object_names = ['person']
+			coordinate=[]
+
+			if detections is not None and len(detections) < 4:
+				print("The objects detected are: ")
+				unique_labels = detections[:, -1].cpu().unique()
+				n_cls_preds = len(unique_labels)
+	
+				# browse detections and draw bounding boxes
+				for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+					if classes[int(cls_pred)] in object_names:
+						box_h = ((y2 - y1) / unpad_h) * img.shape[0]
+						box_w = ((x2 - x1) / unpad_w) * img.shape[1]
+						y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
+						x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
+						# print("\n##########################################################\n")
+						# print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
+						# print("Top_left_x = " + str(x1.cpu().numpy()))
+						# print("Top_left_y = " + str(y1.cpu().numpy()))
+						# print("Height = " + str(box_h.cpu().numpy()))
+						# print("Width = " + str(box_w.cpu().numpy()))
+						coordinate.append(x1.cpu().numpy())
+						coordinate.append(y1.cpu().numpy())
+						coordinate.append(box_w.cpu().numpy())
+						coordinate.append(box_h.cpu().numpy())
+
+						flag = 1
+						
+						if display_detection == True:
+							bbox_colors = random.sample(colors, n_cls_preds)
+							color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+							bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+							ax.add_patch(bbox)
+							plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
+									bbox={'color': color, 'pad': 0})
+			else:
+				print("No objects of the desired type are detected!!\n")
+
+			if flag == 0:
+				print("None")
+						
+			print("\n##########################################################\n")
+
+			# save image
+			# if save_detection == True:
+			# 	plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
+
+			if display_detection == True:
+				plt.axis('off')
+				plt.show()
+			return coordinate
+
+
+	def detect_players_video(self, video_path):
+		cap = cv2.VideoCapture(video_path)
+		fps = cap.get(cv2.CAP_PROP_FPS)
+
+		while(1):
+			#reading the video frame by frame
+			ret,frame = cap.read()
+			if ret:
+				# (h, w) = frame.shape[:2]
+				all_coordinates = self.detect_players_image(img=frame,display_detection = False)
+				centerbottom = get_center_bottom(all_coordinates)
+				for x in range(int(len(all_coordinates)/4)):
+					start = 4*x
+					end = start+4
+					x1, y1, box_w, box_h = all_coordinates[start:end]
+					cv2.rectangle(frame,(x1,y1),(x1+box_w,y1+box_h),(0,255,0),2)
+
+				cv2.putText(frame, 'FPS: ' + str(fps),
+										(int(w*0.004),int(h*0.04)),
+										cv2.FONT_HERSHEY_SIMPLEX, 0.9,(0,255,0), 3)
+				cv2.imshow("Final output", frame)
+
+			k = cv2.waitKey(1)
+			if k == ord('q'):
+				break
+
+		cap.release()
+		cv2.destroyAllWindows()
