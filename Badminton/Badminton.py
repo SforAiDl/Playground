@@ -109,10 +109,10 @@ class Detector:
 					print("Centre_y = " + str(y1.cpu().numpy()))
 					print("Height = " + str(box_h.cpu().numpy()))
 					print("Width = " + str(box_w.cpu().numpy()))
-                    coordinate.append(x1.cpu().numpy())
-	                coordinate.append(y1.cpu().numpy())
-	                coordinate.append(box_w.cpu().numpy())
-	                coordinate.append(box_h.cpu().numpy())
+                   			coordinate.append(x1.cpu().numpy())
+	                		coordinate.append(y1.cpu().numpy())
+	                		coordinate.append(box_w.cpu().numpy())
+	                		coordinate.append(box_h.cpu().numpy())
 					flag = 1
 					color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
 					bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
