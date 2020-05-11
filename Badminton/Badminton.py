@@ -95,6 +95,7 @@ class Detector:
 			unique_labels = detections[:, -1].cpu().unique()
 			n_cls_preds = len(unique_labels)
 			bbox_colors = random.sample(colors, n_cls_preds)
+			coordinate=[]
 			# browse detections and draw bounding boxes
 			for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
 				if classes[int(cls_pred)] in object_names:
@@ -108,6 +109,10 @@ class Detector:
 					print("Centre_y = " + str(y1.cpu().numpy()))
 					print("Height = " + str(box_h.cpu().numpy()))
 					print("Width = " + str(box_w.cpu().numpy()))
+					coordinate.append(x1.cpu().numpy())
+		      			coordinate.append(y1.cpu().numpy())
+		      			coordinate.append(box_w.cpu().numpy())
+		      			coordinate.append(box_h.cpu().numpy())
 					flag = 1
 					color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
 					bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
@@ -126,3 +131,16 @@ class Detector:
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		plt.show()
+		return coordinate
+
+	def center_bottom(self,img_path):
+		self.img_path=img_path
+		coordinate=self.detect_players(img_path)
+		centerbottom=[]
+		for x in range(len(coordinate)/4):
+			x1,y1,box_w,box_h=coordinate[0:3]
+			y_half=y1+(float(box_w/2))
+			centerbottom.append(x1)
+			centerbottom.append(y_half)
+		return centerbottom
+
