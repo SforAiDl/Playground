@@ -7,10 +7,15 @@ A python library consisting of pipelines for visual analysis of different sports
 
 ```
 # For singe image:
+
 from Badminton.Badminton import Detector
 obj = Detector()
 obj.detect_players_image("Badminton/images/bad.jpg")
+
+
+
 # For video:
+
 from Badminton.Badminton import Detector
 obj = Detector()
 obj.detect_players_video("Badminton/images/video.mp4")
