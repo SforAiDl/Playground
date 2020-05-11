@@ -126,3 +126,22 @@ class Detector:
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		plt.show()
+		coordinate=[]
+		coordinate.append(x1)
+		coordinate.append(y1)
+		coordinate.append(box_w)
+		coordinate.append(box_h)
+		return coordinate
+
+	def center_bottom(self,img_path):
+		self.img_path=img_path
+		coordinate=self.detect_players(img_path)
+		x1=coordinate[0]
+		y1=coordinate[1]
+		box_w=coordinate[2]
+		box_h=coordinate[3]
+		y_half=y1+(float(box_w/2))
+		centerbottom=[]
+		centerbottom.append(x1)
+		centerbottom.append(y_half)
+		return centerbottom
