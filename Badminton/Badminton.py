@@ -14,13 +14,14 @@ import matplotlib.patches as patches
 from PIL import Image
 
 class Detector:
-	def __init__(self, config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
+	def __init__(self, config_folder = "Badminton/config",config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
 		self.config_path = config_path
 		self.weights_path = weights_path
 		self.class_path = class_path
 		self.img_size = img_size
 		self.conf_thres = conf_thres
 		self.nms_thres = nms_thres
+		self.config_folder = config_folder
 
 	def detect_image(self,model,img):
 		self.img = img
@@ -55,6 +56,15 @@ class Detector:
 
 	def detect_players(self,img_path):
 		# Load model and weights
+		isFile = os.path.isfile(self.weights_path)
+		if isFile == False:
+			os.chdir(self.config_folder)
+			print("Downloading the weights")
+			try:
+				os.system("./download_weights.sh")
+			except:
+				raise Exception("Not able to download the weights")
+			os.chdir("../../")
 		model = Darknet(self.config_path, img_size=self.img_size)
 		model.load_weights(self.weights_path)
 		model.cuda()
