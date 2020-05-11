@@ -116,8 +116,8 @@ class Detector:
 					x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
 					print("\n##########################################################\n")
 					print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
-					print("Centre_x = " + str(x1.cpu().numpy()))
-					print("Centre_y = " + str(y1.cpu().numpy()))
+					print("Top_left_x = " + str(x1.cpu().numpy()))
+					print("Top_left_y = " + str(y1.cpu().numpy()))
 					print("Height = " + str(box_h.cpu().numpy()))
 					print("Width = " + str(box_w.cpu().numpy()))
                    			coordinate.append(x1.cpu().numpy())
@@ -152,7 +152,9 @@ class Detector:
             start = 4*(x)
             end = start+3
             x1, y1, box_w, box_h = coordinate[start:end]
-            y_half = y1+(float(box_w/2))
-            centerbottom.append(x1)
-            centerbottom.append(y_half)
+            x_centre = x1 + (float(box_w/2))
+            y_bottom = y1 + box_h
+            # y_half = y1+(float(box_w/2))
+            centerbottom.append(x_centre)
+            centerbottom.append(y_bottom)
         return centerbottom
