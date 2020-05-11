@@ -11,6 +11,12 @@ import numpy as np
 #import matplotlib.patches as patches
 
 
+def PIL_to_OpenCV(pil_image):
+    open_cv_image = np.array(pil_image)
+    # Convert RGB to BGR 
+    img = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)    
+    return img
+    
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
