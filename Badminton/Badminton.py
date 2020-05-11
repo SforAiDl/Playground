@@ -71,6 +71,7 @@ class Detector:
 		detections = self.detect_image(model,img)
 		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 		print ('Inference Time: %s' % (inference_time))
+		# print(img.size)
 
 		# Get bounding-box colors
 		cmap = plt.get_cmap('tab20b')
