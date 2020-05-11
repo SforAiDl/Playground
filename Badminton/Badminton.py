@@ -266,7 +266,7 @@ class Detector:
 			#reading the video frame by frame
 			ret,frame = cap.read()
 			if ret:
-				# (h, w) = frame.shape[:2]
+				(h, w) = frame.shape[:2]
 				all_coordinates = self.detect_players_image(img=frame,display_detection = False)
 				centerbottom = get_center_bottom(all_coordinates)
 				for x in range(int(len(all_coordinates)/4)):
