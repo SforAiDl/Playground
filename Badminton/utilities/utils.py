@@ -11,6 +11,27 @@ import numpy as np
 #import matplotlib.patches as patches
 
 
+def PIL_to_OpenCV(pil_image):
+    open_cv_image = np.array(pil_image)
+    # Convert RGB to BGR 
+    img = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)    
+    return img
+
+def get_center_bottom(coordinate):
+    centerbottom = []
+    if coordinate is not None:
+        for x in range(int(len(coordinate)/4)):
+            start = 4*x
+            end = start+4
+            x1, y1, box_w, box_h = coordinate[start:end]
+            x_centre = x1 + (float(box_w/2))
+            y_bottom = y1 + box_h
+            centerbottom.append(x_centre)
+            centerbottom.append(y_bottom)
+        return centerbottom
+    else:
+        return None
+
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
