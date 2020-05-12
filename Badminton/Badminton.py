@@ -15,7 +15,7 @@ from PIL import Image
 import cv2
 
 class Detector:
-	def __init__(self, config_folder = "Badminton/config",config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4):
+	def __init__(self, config_folder = "Badminton/config",config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names',img_size=416,conf_thres=0.8,nms_thres=0.4,tiny=False):
 		self.config_path = config_path
 		self.weights_path = weights_path
 		self.class_path = class_path
@@ -23,6 +23,7 @@ class Detector:
 		self.conf_thres = conf_thres
 		self.nms_thres = nms_thres
 		self.config_folder = config_folder
+		self.tiny = tiny
 
 	def detect_image(self,model,img,PIL_image_flag = True):
 
@@ -62,13 +63,19 @@ class Detector:
 
 	def detect_players_image(self,img_path=None,img=None,display_detection = True):
 
+		if self.tiny == True:
+			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
+			self.config_path = 'Badminton/config/yolov3-tiny.cfg'
 		# Load model and weights
 		isFile = os.path.isfile(self.weights_path)
 		if isFile == False:
 			os.chdir(self.config_folder)
 			print("Downloading the weights")
 			try:
-				os.system("./download_weights.sh")
+				if self.tiny == False:
+					os.system("./download_weights.sh")
+				else:
+					os.system("./download_tiny_weights.sh")
 			except:
 				raise Exception("Not able to download the weights")
 			os.chdir("../../")
