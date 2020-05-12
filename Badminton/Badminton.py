@@ -61,7 +61,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_path=None,img=None,display_detection = True):
+	def detect_players_image(self,img_src,display_detection = True):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -87,52 +87,32 @@ class Detector:
 		classes = self.load_classes(self.class_path)
 		Tensor = torch.cuda.FloatTensor
 
-		if img_path is None and img is None:
+
+		if img_src is None:
 			print("Error!!! Enter either img_path or img")
-			return [-1]
-		elif img_path is not None and img is not None:
-			print("Error!!! Enter only one out of img_path and img")
-			return [-1]
-		elif img_path is not None and img is None:
+		elif type(img_src) == str:
 			print("Loading from image path")
 			# load image and get detections
-			self.img_path = img_path
+			self.img_src = img_src
 			# img_path = "images/bad.jpg"
 			prev_time = time.time()
-			img = Image.open(self.img_path)
+			img = Image.open(self.img_src)
 			detections = self.detect_image(model,img)
 			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 			# print ('Inference Time: %s' % (inference_time))
 			# print(img.size)
 			img = np.array(img)
-
-		elif img_path is None and img is not None:
+		elif type(img_src) == np.ndarray:
 			print("Loading from image")
-			# Load model and weights
-			isFile = os.path.isfile(self.weights_path)
-			if isFile == False:
-				os.chdir(self.config_folder)
-				print("Downloading the weights")
-				try:
-					os.system("./download_weights.sh")
-				except:
-					raise Exception("Not able to download the weights")
-				os.chdir("../../")
-			model = Darknet(self.config_path, img_size=self.img_size)
-			model.load_weights(self.weights_path)
-			model.cuda()
-			model.eval()
-
-			classes = self.load_classes(self.class_path)
-			Tensor = torch.cuda.FloatTensor
-
 			# load image and get detections
+			self.img_src = img_src
+			img = img_src
 			prev_time = time.time()
 			detections = self.detect_image(model=model, img=img, PIL_image_flag=False)
 			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 			print ('Inference Time: %s' % (inference_time))
 			# print(img.size)
-			img = np.array(img)
+			#img = np.array(img)
 
 		if display_detection == True:
 			# Get bounding-box colors
