@@ -106,69 +106,6 @@ class Detector:
 			# print(img.size)
 			img = np.array(img)
 
-			if display_detection == True:
-				# Get bounding-box colors
-				cmap = plt.get_cmap('tab20b')
-				colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-				plt.figure()
-				fig, ax = plt.subplots(1, figsize=(12,9))
-				ax.imshow(img)
-
-			pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
-			pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
-			unpad_h = self.img_size - pad_y
-			unpad_w = self.img_size - pad_x
-
-			flag = 0
-
-			object_names = ['person']
-			coordinate=[]
-			if detections is not None and len(detections) < 4:
-				# print("The objects detected are: ")
-				unique_labels = detections[:, -1].cpu().unique()
-				n_cls_preds = len(unique_labels)
-				# browse detections and draw bounding boxes
-				for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-					if classes[int(cls_pred)] in object_names:
-						box_h = ((y2 - y1) / unpad_h) * img.shape[0]
-						box_w = ((x2 - x1) / unpad_w) * img.shape[1]
-						y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
-						x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-						# print("\n##########################################################\n")
-						# print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
-						# print("Top_left_x = " + str(x1.cpu().numpy()))
-						# print("Top_left_y = " + str(y1.cpu().numpy()))
-						# print("Height = " + str(box_h.cpu().numpy()))
-						# print("Width = " + str(box_w.cpu().numpy()))
-						coordinate.append(x1.cpu().numpy())
-						coordinate.append(y1.cpu().numpy())
-						coordinate.append(box_w.cpu().numpy())
-						coordinate.append(box_h.cpu().numpy())
-
-						flag = 1
-
-						if display_detection == True:
-							bbox_colors = random.sample(colors, n_cls_preds)
-							color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-							bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-							ax.add_patch(bbox)
-							plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-									bbox={'color': color, 'pad': 0})
-			else:
-				print("No objects of the desired type are detected!!\n")
-
-			if flag == 0:
-				print("None")
-						
-			print("\n##########################################################\n")
-
-			# save image
-			# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
-			if display_detection == True:
-				plt.axis('off')
-				plt.show()
-			return coordinate
-
 		elif img_path is None and img is not None:
 			print("Loading from image")
 			# Load model and weights
@@ -197,72 +134,68 @@ class Detector:
 			# print(img.size)
 			img = np.array(img)
 
-			if display_detection == True:
-				# Get bounding-box colors
-				cmap = plt.get_cmap('tab20b')
-				colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-				plt.figure()
-				fig, ax = plt.subplots(1, figsize=(12,9))
-				ax.imshow(img)
+		if display_detection == True:
+			# Get bounding-box colors
+			cmap = plt.get_cmap('tab20b')
+			colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+			plt.figure()
+			fig, ax = plt.subplots(1, figsize=(12,9))
+			ax.imshow(img)
 
-			pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
-			pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
-			unpad_h = self.img_size - pad_y
-			unpad_w = self.img_size - pad_x
+		pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
+		pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
+		unpad_h = self.img_size - pad_y
+		unpad_w = self.img_size - pad_x
 
-			flag = 0
+		flag = 0
 
-			object_names = ['person']
-			coordinate=[]
-
-			if detections is not None and len(detections) < 4:
-				print("The objects detected are: ")
-				unique_labels = detections[:, -1].cpu().unique()
-				n_cls_preds = len(unique_labels)
-	
-				# browse detections and draw bounding boxes
-				for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-					if classes[int(cls_pred)] in object_names:
-						box_h = ((y2 - y1) / unpad_h) * img.shape[0]
-						box_w = ((x2 - x1) / unpad_w) * img.shape[1]
-						y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
-						x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
+		object_names = ['person']
+		coordinate=[]
+		if detections is not None and len(detections) < 4:
+			# print("The objects detected are: ")
+			unique_labels = detections[:, -1].cpu().unique()
+			n_cls_preds = len(unique_labels)
+			# browse detections and draw bounding boxes
+			for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+				if classes[int(cls_pred)] in object_names:
+					box_h = ((y2 - y1) / unpad_h) * img.shape[0]
+					box_w = ((x2 - x1) / unpad_w) * img.shape[1]
+					y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
+					x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
 						# print("\n##########################################################\n")
 						# print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
 						# print("Top_left_x = " + str(x1.cpu().numpy()))
 						# print("Top_left_y = " + str(y1.cpu().numpy()))
 						# print("Height = " + str(box_h.cpu().numpy()))
 						# print("Width = " + str(box_w.cpu().numpy()))
-						coordinate.append(x1.cpu().numpy())
-						coordinate.append(y1.cpu().numpy())
-						coordinate.append(box_w.cpu().numpy())
-						coordinate.append(box_h.cpu().numpy())
+					coordinate.append(x1.cpu().numpy())
+					coordinate.append(y1.cpu().numpy())
+					coordinate.append(box_w.cpu().numpy())
+					coordinate.append(box_h.cpu().numpy())
 
-						flag = 1
+					flag = 1
+
+					if display_detection == True:
+						bbox_colors = random.sample(colors, n_cls_preds)
+						color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+						bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+						ax.add_patch(bbox)
+						plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
+								bbox={'color': color, 'pad': 0})
+		else:
+			print("No objects of the desired type are detected!!\n")
+
+		if flag == 0:
+			print("None")
 						
-						if display_detection == True:
-							bbox_colors = random.sample(colors, n_cls_preds)
-							color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-							bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-							ax.add_patch(bbox)
-							plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-									bbox={'color': color, 'pad': 0})
-			else:
-				print("No objects of the desired type are detected!!\n")
+		print("\n##########################################################\n")
 
-			if flag == 0:
-				print("None")
-						
-			print("\n##########################################################\n")
-
-			# save image
-			# if save_detection == True:
-			# 	plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
-
-			if display_detection == True:
-				plt.axis('off')
-				plt.show()
-			return coordinate
+		# save image
+		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
+		if display_detection == True:
+			plt.axis('off')
+			plt.show()
+		return coordinate
 
 
 	def detect_players_video(self, video_path):
