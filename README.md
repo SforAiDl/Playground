@@ -3,6 +3,8 @@ A python library consisting of pipelines for visual analysis of different sports
 
 ### Update : Badminton detector for Videos has been added. Note: There are some FPS issues in the video detector. We will resolve them soon!
 
+### Update : FPS improvement achieved with Tiny YOLO
+
 ## To test, simply open up a new terminal and enter the following code:
 
 ```
@@ -19,4 +21,14 @@ obj.detect_players_image("Badminton/images/bad.jpg")
 from Badminton.Badminton import Detector
 obj = Detector()
 obj.detect_players_video("Badminton/images/video.mp4")
+
+
+# For using tiny yolo for better FPS:
+
+# For video:
+
+from Badminton.Badminton import Detector
+obj = Detector(tiny=True)
+obj.detect_players_video("Badminton/images/video.mp4")
+
 ```
