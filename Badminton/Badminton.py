@@ -45,7 +45,12 @@ class Detector:
 		# convert image to Tensor
 		image_tensor = img_transforms(self.img).float()
 		image_tensor = image_tensor.unsqueeze_(0)
-		Tensor = torch.cuda.FloatTensor
+		# Tensor = torch.cuda.FloatTensor
+		if torch.cuda.is_available():
+			model.cuda()
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
 		input_img = Variable(image_tensor.type(Tensor))
 		# run inference on the model and get detections
 		with torch.no_grad():
@@ -61,7 +66,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_src,display_detection = True):
+	def detect_players_image(self,img_src,display_detection = True,ret_img=False):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -73,46 +78,39 @@ class Detector:
 			print("Downloading the weights")
 			try:
 				if self.tiny == False:
-					os.system("./download_weights.sh")
+					os.system("bash download_weights.sh")
 				else:
-					os.system("./download_tiny_weights.sh")
+					os.system("bash download_tiny_weights.sh")
 			except:
 				raise Exception("Not able to download the weights")
 			os.chdir("../../")
 		model = Darknet(self.config_path, img_size=self.img_size)
 		model.load_weights(self.weights_path)
-		model.cuda()
+		if torch.cuda.is_available():
+			model.cuda()
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
 		model.eval()
 
 		classes = self.load_classes(self.class_path)
-		Tensor = torch.cuda.FloatTensor
+		# Tensor = torch.cuda.FloatTensor
+		if torch.cuda.is_available():
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
+		self.img_src = img_src
+		prev_time = time.time()
 
-
-		if img_src is None:
-			print("Error!!! Enter either img_path or img")
-		elif type(img_src) == str:
-			print("Loading from image path")
-			# load image and get detections
-			self.img_src = img_src
-			# img_path = "images/bad.jpg"
-			prev_time = time.time()
+		if type(img_src) == str : #if input is image path
 			img = Image.open(self.img_src)
-			detections = self.detect_image(model,img)
-			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
-			# print ('Inference Time: %s' % (inference_time))
-			# print(img.size)
-			img = np.array(img)
-		elif type(img_src) == np.ndarray:
-			print("Loading from image")
-			# load image and get detections
-			self.img_src = img_src
-			img = img_src
-			prev_time = time.time()
-			detections = self.detect_image(model=model, img=img, PIL_image_flag=False)
-			inference_time = datetime.timedelta(seconds=time.time() - prev_time)
-			print ('Inference Time: %s' % (inference_time))
-			# print(img.size)
-			#img = np.array(img)
+		elif type(img_src) == np.ndarray : #if input is image array
+			img = Image.fromarray(self.img_src)
+
+		detections = self.detect_image(model,img)
+		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
+		img = np.array(img)
+		out_img = img.copy()
 
 		if display_detection == True:
 			# Get bounding-box colors
@@ -132,7 +130,6 @@ class Detector:
 		object_names = ['person']
 		coordinate=[]
 		if detections is not None and len(detections) < 4:
-			# print("The objects detected are: ")
 			unique_labels = detections[:, -1].cpu().unique()
 			n_cls_preds = len(unique_labels)
 			# browse detections and draw bounding boxes
@@ -162,6 +159,11 @@ class Detector:
 						ax.add_patch(bbox)
 						plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
 								bbox={'color': color, 'pad': 0})
+					else:
+						label = classes[int(cls_pred)]
+						cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.45, color=(0, 255, 0), thickness=2)
+						cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(0, 255, 0), 2)
+						
 		else:
 			print("No objects of the desired type are detected!!\n")
 
@@ -175,34 +177,40 @@ class Detector:
 		if display_detection == True:
 			plt.axis('off')
 			plt.show()
-		return coordinate
+			#cv2.imshow("Final output", out_img)
+
+		if not ret_img :
+			cv2.imshow("Final output", out_img)
+			return None,None
+		else :
+			return out_img,coordinate
 
 
 	def detect_players_video(self, video_path):
+	
+		out_video = []
 		cap = cv2.VideoCapture(video_path)
 		fps = cap.get(cv2.CAP_PROP_FPS)
-
+		prev_time2 = time.time()
 		while(1):
 			#reading the video frame by frame
 			ret,frame = cap.read()
-			if ret:
-				(h, w) = frame.shape[:2]
-				all_coordinates = self.detect_players_image(img=frame,display_detection = False)
-				centerbottom = get_center_bottom(all_coordinates)
-				for x in range(int(len(all_coordinates)/4)):
-					start = 4*x
-					end = start+4
-					x1, y1, box_w, box_h = all_coordinates[start:end]
-					cv2.rectangle(frame,(x1,y1),(x1+box_w,y1+box_h),(0,255,0),2)
+			if not ret:
+				break
 
-				cv2.putText(frame, 'FPS: ' + str(fps),
-										(int(w*0.004),int(h*0.04)),
-										cv2.FONT_HERSHEY_SIMPLEX, 0.9,(0,255,0), 3)
-				cv2.imshow("Final output", frame)
-
+			(h, w) = frame.shape[:2]
+			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+			centerbottom = get_center_bottom(all_coordinates)
+			out_video.append(out_frame)
 			k = cv2.waitKey(1)
 			if k == ord('q'):
 				break
 
 		cap.release()
+		print("Time taken is:" + str(time.time() - prev_time2))
+		fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+		out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"),fourcc,fps,(w,h))
+		for i in range(len(out_video)):
+			out.write(out_video	[i])
+		out.release()
 		cv2.destroyAllWindows()
