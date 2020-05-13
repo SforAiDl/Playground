@@ -165,12 +165,10 @@ class Detector:
 						cv2.imshow("Final output", out_img)
 
 		else:
-			print("No objects of the desired type are detected!!\n")
-
-		if flag == 0:
-			print("None")
+			# print("No player detected!!\n")
+			pass
 						
-		print("\n##########################################################\n")
+		# print("\n##########################################################\n")
 
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
@@ -199,7 +197,6 @@ class Detector:
 
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-			centerbottom = get_center_bottom(all_coordinates)
 			out_video.append(out_frame)
 			k = cv2.waitKey(1)
 			if k == ord('q'):
@@ -213,3 +210,64 @@ class Detector:
 			out.write(out_video	[i])
 		out.release()
 		cv2.destroyAllWindows()
+
+	def get_heatmap(self,video_path):
+
+		cap = cv2.VideoCapture(video_path)
+		fps = cap.get(cv2.CAP_PROP_FPS)
+		prev_time2 = time.time()
+		frame_count = 0 
+	
+		count=0
+
+		while(1):
+			#reading the video frame by frame
+			ret,frame = cap.read()
+			if not ret:
+				break
+			# For the first frame, take the 4 court co-ordinates input
+			if frame_count == 0:
+				image =frame
+				get_court_coordinates(image)
+				print('Position is: ', positions)
+				# These are points of court selected by user
+				pts1 = np.float32(positions)
+				# Size of 2D image we want to generate 
+				pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
+				matrix, status = cv2.findHomography(pts1, pts2)
+				result = cv2.warpPerspective(image, matrix, (1080, 1920))
+				result = PIL_to_OpenCV(result)
+
+				plt.figure()
+				fig, ax = plt.subplots(1, figsize=(12,9))
+				ax.imshow(result)
+
+			(h, w) = frame.shape[:2]
+			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+			centerbottom = get_center_bottom(all_coordinates)
+
+			#sample point of player position 
+			if len(centerbottom) != 0:
+				for i in range(0,len(centerbottom),2):
+
+					a = np.array([[centerbottom[i],centerbottom[i+1]]], dtype='float32')
+					a = np.array([a])
+
+					# Position of player after Perspective transformation
+					pointsOut1 = cv2.perspectiveTransform(a,matrix)
+
+					bbox = patches.Rectangle((pointsOut1[0][0][0], pointsOut1[0][0][1] ), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+					ax.add_patch(bbox)
+			
+			frame_count += 1
+			# out_video.append(out_frame)
+			k = cv2.waitKey(1)
+			if k == ord('q'):
+				break
+		cap.release()
+		print("Time taken is:" + str(time.time() - prev_time2))
+
+		cv2.destroyAllWindows()
+		plt.show()
+
+
