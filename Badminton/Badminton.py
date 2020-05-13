@@ -45,7 +45,12 @@ class Detector:
 		# convert image to Tensor
 		image_tensor = img_transforms(self.img).float()
 		image_tensor = image_tensor.unsqueeze_(0)
-		Tensor = torch.cuda.FloatTensor
+		# Tensor = torch.cuda.FloatTensor
+		if torch.cuda.is_available():
+			model.cuda()
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
 		input_img = Variable(image_tensor.type(Tensor))
 		# run inference on the model and get detections
 		with torch.no_grad():
@@ -73,19 +78,27 @@ class Detector:
 			print("Downloading the weights")
 			try:
 				if self.tiny == False:
-					os.system("./download_weights.sh")
+					os.system("bash download_weights.sh")
 				else:
-					os.system("./download_tiny_weights.sh")
+					os.system("bash download_tiny_weights.sh")
 			except:
 				raise Exception("Not able to download the weights")
 			os.chdir("../../")
 		model = Darknet(self.config_path, img_size=self.img_size)
 		model.load_weights(self.weights_path)
-		model.cuda()
+		if torch.cuda.is_available():
+			model.cuda()
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
 		model.eval()
 
 		classes = self.load_classes(self.class_path)
-		Tensor = torch.cuda.FloatTensor
+		# Tensor = torch.cuda.FloatTensor
+		if torch.cuda.is_available():
+			Tensor = torch.cuda.FloatTensor
+		else:
+			Tensor = torch.FloatTensor
 		self.img_src = img_src
 		prev_time = time.time()
 
