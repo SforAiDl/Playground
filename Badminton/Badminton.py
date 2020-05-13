@@ -67,7 +67,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_src,display_detection = True,ret_img=False):
+	def detect_players_image(self,img_src,display_detection = True,ret_img=False,save_prediction=False):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -174,6 +174,10 @@ class Detector:
 
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
+		if save_prediction==True:
+			plt.savefig(img_src.replace("bad.jpg","bad-det.jpg"),bbox_inches='tight',pad_inches=0.0)
+			print("The image has been saved.")
+
 		if display_detection == True:
 			plt.axis('off')
 			plt.show()
