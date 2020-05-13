@@ -111,13 +111,13 @@ class Detector:
 		img = np.array(img)
 		out_img = img.copy()
 
-		if display_detection == True:
+		#if display_detection == True:
 			# Get bounding-box colors
-			cmap = plt.get_cmap('tab20b')
-			colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-			plt.figure()
-			fig, ax = plt.subplots(1, figsize=(12,9))
-			ax.imshow(img)
+		cmap = plt.get_cmap('tab20b')
+		colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+			#plt.figure()
+			#fig, ax = plt.subplots(1, figsize=(12,9))
+			#ax.imshow(img)
 
 		pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
 		pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
@@ -151,35 +151,43 @@ class Detector:
 
 					flag = 1
 
-					if display_detection == True:
-						bbox_colors = random.sample(colors, n_cls_preds)
-						color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-						bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-						ax.add_patch(bbox)
-						plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-								bbox={'color': color, 'pad': 0})
-					else:
-						label = classes[int(cls_pred)]
-						cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.45, color=(0, 255, 0), thickness=2)
-						cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(0, 255, 0), 2)
-						cv2.imshow("Final output", out_img)
-
+					# if display_detection == True:
+					# 	bbox_colors = random.sample(colors, n_cls_preds)
+					# 	color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+					# 	bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+					# 	ax.add_patch(bbox)
+					# 	plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',bbox={'color': color, 'pad': 0})
+					# else:	
+					label = classes[int(cls_pred)]
+					bbox_colors = random.sample(colors, n_cls_preds)
+					#color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+					color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
+					cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
+					cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
+						
 		else:
 			print("No objects of the desired type are detected!!\n")
 
 		if flag == 0:
 			print("None")
 						
-		print("\n##########################################################\n")
-
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		if display_detection == True:
-			plt.axis('off')
-			plt.show()
 
-		if not ret_img :
+			print("\n##########################################################\n")
+			#plt.axis('off')
+			#plt.show()
+			if type(img_src) == str:
+				print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
+				cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
+			else:
+				print("Output image can be found here: " + os.getcwd()+"/output.jpg")
+				cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
 			cv2.imshow("Final output", out_img)
+		
+		if not ret_img :
+			#cv2.imshow("Final output", out_img)
 			return None,None
 		else :
 			return out_img,coordinate
@@ -201,9 +209,9 @@ class Detector:
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 			centerbottom = get_center_bottom(all_coordinates)
 			out_video.append(out_frame)
-			k = cv2.waitKey(1)
-			if k == ord('q'):
-				break
+			# k = cv2.waitKey(1)
+			# if k == ord('q'):
+			# 	break
 
 		cap.release()
 		print("Time taken is:" + str(time.time() - prev_time2))
@@ -211,5 +219,6 @@ class Detector:
 		out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"),fourcc,fps,(w,h))
 		for i in range(len(out_video)):
 			out.write(out_video	[i])
+		print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 		out.release()
 		cv2.destroyAllWindows()
