@@ -29,15 +29,16 @@ def draw_circle(event, x, y, flags, image):
 
 
 def get_court_coordinates(image):
-
+    print("\n##########################################################\n")
     print("Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape")
+    print("\n##########################################################\n")
     cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape')
     cv2.setMouseCallback('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', draw_circle,image)
                
     while True:
         cv2.imshow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', image)
         k = cv2.waitKey(20) & 0xFF
-        if k == 27:
+        if k == 27 or (len(positions) > 0 and len(positions) == 4):
             break
 
     cv2.destroyAllWindows()

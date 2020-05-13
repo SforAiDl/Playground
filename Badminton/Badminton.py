@@ -215,7 +215,6 @@ class Detector:
 
 		cap = cv2.VideoCapture(video_path)
 		fps = cap.get(cv2.CAP_PROP_FPS)
-		prev_time2 = time.time()
 		frame_count = 0 
 	
 		count=0
@@ -230,6 +229,8 @@ class Detector:
 				image =frame
 				get_court_coordinates(image)
 				print('Position is: ', positions)
+				if len(positions) < 4:
+					print("Error!!! Select the 4 coordinates of the court correctly")
 				# These are points of court selected by user
 				pts1 = np.float32(positions)
 				# Size of 2D image we want to generate 
@@ -242,6 +243,7 @@ class Detector:
 				fig, ax = plt.subplots(1, figsize=(12,9))
 				ax.imshow(result)
 
+			prev_time2 = time.time()
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 			centerbottom = get_center_bottom(all_coordinates)
@@ -268,6 +270,7 @@ class Detector:
 		print("Time taken is:" + str(time.time() - prev_time2))
 
 		cv2.destroyAllWindows()
+		plt.savefig('./Badminton/images/heatmap.png',bbox_inches='tight')
 		plt.show()
 
 
