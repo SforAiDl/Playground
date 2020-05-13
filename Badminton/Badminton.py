@@ -45,10 +45,11 @@ class Detector:
 		# convert image to Tensor
 		image_tensor = img_transforms(self.img).float()
 		image_tensor = image_tensor.unsqueeze_(0)
+		# Tensor = torch.cuda.FloatTensor
 
 		if torch.cuda.is_available():
-      model.cuda()
 			Tensor = torch.cuda.FloatTensor
+			model.cuda()
 		else:
 			Tensor = torch.FloatTensor
 		input_img = Variable(image_tensor.type(Tensor))
@@ -94,13 +95,10 @@ class Detector:
 		model.eval()
 
 		classes = self.load_classes(self.class_path)
-
 		# Tensor = torch.cuda.FloatTensor
-		if torch.cuda.is_available():
-			Tensor = torch.cuda.FloatTensor
-		else:
-			Tensor = torch.FloatTensor
 		self.img_src = img_src
+		prev_time = time.time()
+
 		prev_time = time.time()
 
 		if type(img_src) == str : #if input is image path
@@ -164,7 +162,8 @@ class Detector:
 						label = classes[int(cls_pred)]
 						cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.45, color=(0, 255, 0), thickness=2)
 						cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(0, 255, 0), 2)
-						
+						cv2.imshow("Final output", out_img)
+
 		else:
 			print("No objects of the desired type are detected!!\n")
 
@@ -178,7 +177,6 @@ class Detector:
 		if display_detection == True:
 			plt.axis('off')
 			plt.show()
-			#cv2.imshow("Final output", out_img)
 
 		if not ret_img :
 			cv2.imshow("Final output", out_img)
