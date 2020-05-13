@@ -45,9 +45,9 @@ class Detector:
 		# convert image to Tensor
 		image_tensor = img_transforms(self.img).float()
 		image_tensor = image_tensor.unsqueeze_(0)
-		# Tensor = torch.cuda.FloatTensor
+
 		if torch.cuda.is_available():
-			model.cuda()
+      model.cuda()
 			Tensor = torch.cuda.FloatTensor
 		else:
 			Tensor = torch.FloatTensor
@@ -94,6 +94,7 @@ class Detector:
 		model.eval()
 
 		classes = self.load_classes(self.class_path)
+
 		# Tensor = torch.cuda.FloatTensor
 		if torch.cuda.is_available():
 			Tensor = torch.cuda.FloatTensor
