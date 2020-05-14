@@ -50,3 +50,13 @@ obj.get_heatmap("Badminton/images/video2.mp4")
 ################################################################
 
 ```
+
+## To test this code in Windows simply change the code in test.py to
+
+```
+
+from Badminton.Badminton import Detector
+obj = Detector(Windows=True)
+obj.detect_players_video("Badminton/images/video2.mp4")
+
+```
