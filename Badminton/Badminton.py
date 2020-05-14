@@ -28,7 +28,7 @@ class Detector:
 	def detect_image(self,model,img,PIL_image_flag = True):
 
 		if PIL_image_flag == False:
-			img = np.asarray(img)
+			# You may need to convert the color.
 			img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 			img = Image.fromarray(img)
 		self.img = img
@@ -67,7 +67,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_src,display_detection = True,ret_img=False):
+	def detect_players_image(self,img_src,display_detection = True,save_detection=False,ret_img=False):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -102,22 +102,22 @@ class Detector:
 		prev_time = time.time()
 
 		if type(img_src) == str : #if input is image path
-			img = cv2.imread(self.img_src)
+			img = Image.open(self.img_src)
 		elif type(img_src) == np.ndarray : #if input is image array
 			img = Image.fromarray(self.img_src)
 
-		detections = self.detect_image(model,img,PIL_image_flag=False)
+		detections = self.detect_image(model,img)
 		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 		img = np.array(img)
 		out_img = img.copy()
 
-		if display_detection == True:
+		#if display_detection == True:
 			# Get bounding-box colors
-			cmap = plt.get_cmap('tab20b')
-			colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-			plt.figure()
-			fig, ax = plt.subplots(1, figsize=(12,9))
-			ax.imshow(img)
+		cmap = plt.get_cmap('tab20b')
+		colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+			#plt.figure()
+			#fig, ax = plt.subplots(1, figsize=(12,9))
+			#ax.imshow(img)
 
 		pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
 		pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
@@ -151,33 +151,45 @@ class Detector:
 
 					flag = 1
 
-					if display_detection == True:
-						bbox_colors = random.sample(colors, n_cls_preds)
-						color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-						bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-						ax.add_patch(bbox)
-						plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-								bbox={'color': color, 'pad': 0})
-					else:
-						label = classes[int(cls_pred)]
-						cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.45, color=(0, 255, 0), thickness=2)
-						cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(0, 255, 0), 2)
-						cv2.imshow("Final output", out_img)
-
-		else:
-			# print("No player detected!!\n")
-			pass
+					# if display_detection == True:
+					# 	bbox_colors = random.sample(colors, n_cls_preds)
+					# 	color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+					# 	bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+					# 	ax.add_patch(bbox)
+					# 	plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',bbox={'color': color, 'pad': 0})
+					# else:	
+					label = classes[int(cls_pred)]
+					bbox_colors = random.sample(colors, n_cls_preds)
+					#color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+					color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
+					cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
+					cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
 						
-		# print("\n##########################################################\n")
+		else:
+			print("No objects of the desired type are detected!!\n")
 
+		if flag == 0:
+			print("None")
+						
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		if display_detection == True:
-			plt.axis('off')
-			plt.show()
 
-		if not ret_img :
+			print("\n##########################################################\n")
 			cv2.imshow("Final output", out_img)
+			#plt.axis('off')
+			#plt.show()
+		if save_detection == True:
+			if type(img_src) == str:
+				print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
+				cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
+			else:
+				print("Output image can be found here: " + os.getcwd()+"/output.jpg")
+				cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
+			
+		
+		if not ret_img :
+			#cv2.imshow("Final output", out_img)
 			return None,None
 		else :
 			return out_img,coordinate
@@ -197,10 +209,11 @@ class Detector:
 
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+			centerbottom = get_center_bottom(all_coordinates)
 			out_video.append(out_frame)
-			k = cv2.waitKey(1)
-			if k == ord('q'):
-				break
+			# k = cv2.waitKey(1)
+			# if k == ord('q'):
+			# 	break
 
 		cap.release()
 		print("Time taken is:" + str(time.time() - prev_time2))
@@ -208,69 +221,7 @@ class Detector:
 		out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"),fourcc,fps,(w,h))
 		for i in range(len(out_video)):
 			out.write(out_video	[i])
+		print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 		out.release()
 		cv2.destroyAllWindows()
-
-	def get_heatmap(self,video_path):
-
-		cap = cv2.VideoCapture(video_path)
-		fps = cap.get(cv2.CAP_PROP_FPS)
-		frame_count = 0 
-	
-		count=0
-
-		while(1):
-			#reading the video frame by frame
-			ret,frame = cap.read()
-			if not ret:
-				break
-			# For the first frame, take the 4 court co-ordinates input
-			if frame_count == 0:
-				image =frame
-				get_court_coordinates(image)
-				print('Position is: ', positions)
-				if len(positions) < 4:
-					print("Error!!! Select the 4 coordinates of the court correctly")
-				# These are points of court selected by user
-				pts1 = np.float32(positions)
-				# Size of 2D image we want to generate 
-				pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
-				matrix, status = cv2.findHomography(pts1, pts2)
-				result = cv2.warpPerspective(image, matrix, (1080, 1920))
-				result = PIL_to_OpenCV(result)
-
-				plt.figure()
-				fig, ax = plt.subplots(1, figsize=(12,9))
-				ax.imshow(result)
-
-			prev_time2 = time.time()
-			(h, w) = frame.shape[:2]
-			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-			centerbottom = get_center_bottom(all_coordinates)
-
-			#sample point of player position 
-			if len(centerbottom) != 0:
-				for i in range(0,len(centerbottom),2):
-
-					a = np.array([[centerbottom[i],centerbottom[i+1]]], dtype='float32')
-					a = np.array([a])
-
-					# Position of player after Perspective transformation
-					pointsOut1 = cv2.perspectiveTransform(a,matrix)
-
-					bbox = patches.Rectangle((pointsOut1[0][0][0], pointsOut1[0][0][1] ), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
-					ax.add_patch(bbox)
-			
-			frame_count += 1
-			# out_video.append(out_frame)
-			k = cv2.waitKey(1)
-			if k == ord('q'):
-				break
-		cap.release()
-		print("Time taken is:" + str(time.time() - prev_time2))
-
-		cv2.destroyAllWindows()
-		plt.savefig('./Badminton/images/heatmap.png',bbox_inches='tight')
-		plt.show()
-
 
