@@ -28,7 +28,7 @@ class Detector:
 	def detect_image(self,model,img,PIL_image_flag = True):
 
 		if PIL_image_flag == False:
-			# You may need to convert the color.
+			img = np.asarray(img)
 			img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 			img = Image.fromarray(img)
 		self.img = img
@@ -67,7 +67,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_src,display_detection = True,save_detection=False,ret_img=False):
+	def detect_players_image(self,img_src,display_detection = True,ret_img=False):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -102,17 +102,22 @@ class Detector:
 		prev_time = time.time()
 
 		if type(img_src) == str : #if input is image path
-			img = Image.open(self.img_src)
+			img = cv2.imread(self.img_src)
 		elif type(img_src) == np.ndarray : #if input is image array
 			img = Image.fromarray(self.img_src)
 
-		detections = self.detect_image(model,img)
+		detections = self.detect_image(model,img,PIL_image_flag=False)
 		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 		img = np.array(img)
 		out_img = img.copy()
 
-		cmap = plt.get_cmap('tab20b')
-		colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+		if display_detection == True:
+			# Get bounding-box colors
+			cmap = plt.get_cmap('tab20b')
+			colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+			plt.figure()
+			fig, ax = plt.subplots(1, figsize=(12,9))
+			ax.imshow(img)
 
 		pad_x = max(img.shape[0] - img.shape[1], 0) * (self.img_size / max(img.shape))
 		pad_y = max(img.shape[1] - img.shape[0], 0) * (self.img_size / max(img.shape))
@@ -133,6 +138,12 @@ class Detector:
 					box_w = ((x2 - x1) / unpad_w) * img.shape[1]
 					y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
 					x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
+						# print("\n##########################################################\n")
+						# print("The box co-ordinates of " + str(classes[int(cls_pred)]) + " is :")
+						# print("Top_left_x = " + str(x1.cpu().numpy()))
+						# print("Top_left_y = " + str(y1.cpu().numpy()))
+						# print("Height = " + str(box_h.cpu().numpy()))
+						# print("Width = " + str(box_w.cpu().numpy()))
 					coordinate.append(x1.cpu().numpy())
 					coordinate.append(y1.cpu().numpy())
 					coordinate.append(box_w.cpu().numpy())
@@ -140,29 +151,33 @@ class Detector:
 
 					flag = 1
 
-					label = classes[int(cls_pred)]
-					bbox_colors = random.sample(colors, n_cls_preds)
-					color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
-					cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-					cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
-						
+					if display_detection == True:
+						bbox_colors = random.sample(colors, n_cls_preds)
+						color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+						bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+						ax.add_patch(bbox)
+						plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
+								bbox={'color': color, 'pad': 0})
+					else:
+						label = classes[int(cls_pred)]
+						cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.45, color=(0, 255, 0), thickness=2)
+						cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(0, 255, 0), 2)
+						cv2.imshow("Final output", out_img)
+
 		else:
+			# print("No player detected!!\n")
 			pass
 						
+		# print("\n##########################################################\n")
+
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		if display_detection == True:
-			cv2.imshow("Final output", out_img)
-		if save_detection == True:
-			if type(img_src) == str:
-				print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
-				cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-			else:
-				print("Output image can be found here: " + os.getcwd()+"/output.jpg")
-				cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-			
-		
+			plt.axis('off')
+			plt.show()
+
 		if not ret_img :
+			cv2.imshow("Final output", out_img)
 			return None,None
 		else :
 			return out_img,coordinate
@@ -182,11 +197,10 @@ class Detector:
 
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-			centerbottom = get_center_bottom(all_coordinates)
 			out_video.append(out_frame)
-			# k = cv2.waitKey(1)
-			# if k == ord('q'):
-			# 	break
+			k = cv2.waitKey(1)
+			if k == ord('q'):
+				break
 
 		cap.release()
 		print("Time taken is:" + str(time.time() - prev_time2))
@@ -194,7 +208,6 @@ class Detector:
 		out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"),fourcc,fps,(w,h))
 		for i in range(len(out_video)):
 			out.write(out_video	[i])
-		print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 		out.release()
 		cv2.destroyAllWindows()
 
@@ -213,7 +226,7 @@ class Detector:
 				break
 			# For the first frame, take the 4 court co-ordinates input
 			if frame_count == 0:
-				image = frame
+				image =frame
 				get_court_coordinates(image)
 				print('Position is: ', positions)
 				if len(positions) < 4:
@@ -229,9 +242,8 @@ class Detector:
 				plt.figure()
 				fig, ax = plt.subplots(1, figsize=(12,9))
 				ax.imshow(result)
-				print(frame_count)
-				prev_time2 = time.time()
 
+			prev_time2 = time.time()
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 			centerbottom = get_center_bottom(all_coordinates)
@@ -250,6 +262,7 @@ class Detector:
 					ax.add_patch(bbox)
 			
 			frame_count += 1
+			# out_video.append(out_frame)
 			k = cv2.waitKey(1)
 			if k == ord('q'):
 				break
