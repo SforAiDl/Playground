@@ -37,3 +37,17 @@ from Badminton.Badminton import Detector
 obj = Detector(tiny=True)
 obj.detect_players_video("Badminton/images/video.mp4")
 ```
+
+### Badminton.Badminton.Detector.get_heatmap(self, video_path)
+Detects players and tracks their respective movements in the video; accordingly generates a picture plotting the heatmap of the players.
+
+#### Parameters
+* **video_path**: str
+   Path of the video file as a string.
+
+#### Usage
+```python
+from Badminton.Badminton import Detector
+obj = Detector(tiny=True)
+obj.get_heatmap("Badminton/images/video.mp4")
+```
