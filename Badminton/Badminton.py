@@ -28,7 +28,7 @@ class Detector:
 	def detect_image(self,model,img,PIL_image_flag = True):
 
 		if PIL_image_flag == False:
-			# You may need to convert the color.
+			img = np.asarray(img)
 			img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 			img = Image.fromarray(img)
 		self.img = img
@@ -102,11 +102,11 @@ class Detector:
 		prev_time = time.time()
 
 		if type(img_src) == str : #if input is image path
-			img = Image.open(self.img_src)
+			img = cv2.imread(self.img_src)
 		elif type(img_src) == np.ndarray : #if input is image array
 			img = Image.fromarray(self.img_src)
 
-		detections = self.detect_image(model,img)
+		detections = self.detect_image(model,img,PIL_image_flag=False)
 		inference_time = datetime.timedelta(seconds=time.time() - prev_time)
 		img = np.array(img)
 		out_img = img.copy()
