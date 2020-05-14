@@ -165,11 +165,8 @@ class Detector:
 						cv2.imshow("Final output", out_img)
 
 		else:
-			# print("No player detected!!\n")
 			pass
 						
-		# print("\n##########################################################\n")
-
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		if display_detection == True:
@@ -226,7 +223,7 @@ class Detector:
 				break
 			# For the first frame, take the 4 court co-ordinates input
 			if frame_count == 0:
-				image =frame
+				image = frame
 				get_court_coordinates(image)
 				print('Position is: ', positions)
 				if len(positions) < 4:
