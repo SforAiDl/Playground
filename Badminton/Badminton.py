@@ -152,10 +152,7 @@ class Detector:
 		# save image
 		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
 		if display_detection == True:
-
 			cv2.imshow("Final output", out_img)
-			#plt.axis('off')
-			#plt.show()
 		if save_detection == True:
 			if type(img_src) == str:
 				print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
@@ -232,8 +229,9 @@ class Detector:
 				plt.figure()
 				fig, ax = plt.subplots(1, figsize=(12,9))
 				ax.imshow(result)
+				print(frame_count)
+				prev_time2 = time.time()
 
-			prev_time2 = time.time()
 			(h, w) = frame.shape[:2]
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 			centerbottom = get_center_bottom(all_coordinates)
@@ -252,7 +250,6 @@ class Detector:
 					ax.add_patch(bbox)
 			
 			frame_count += 1
-			# out_video.append(out_frame)
 			k = cv2.waitKey(1)
 			if k == ord('q'):
 				break
