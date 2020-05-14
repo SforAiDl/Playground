@@ -67,7 +67,7 @@ class Detector:
 		names = fp.read().split("\n")[:-1]
 		return names
 
-	def detect_players_image(self,img_src,display_detection = True,ret_img=False):
+	def detect_players_image(self,img_src,display_detection = True,save_detection=False,ret_img=False):
 
 		if self.tiny == True:
 			self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -176,15 +176,17 @@ class Detector:
 		if display_detection == True:
 
 			print("\n##########################################################\n")
+			cv2.imshow("Final output", out_img)
 			#plt.axis('off')
 			#plt.show()
+		if save_detection == True:
 			if type(img_src) == str:
 				print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
 				cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
 			else:
 				print("Output image can be found here: " + os.getcwd()+"/output.jpg")
 				cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-			cv2.imshow("Final output", out_img)
+			
 		
 		if not ret_img :
 			#cv2.imshow("Final output", out_img)
