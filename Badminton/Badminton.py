@@ -152,6 +152,7 @@ class Detector:
                     cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
                     cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
 						
+
         else:
             pass
 						
@@ -163,8 +164,7 @@ class Detector:
                 cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
             else:
                 print("Output image can be found here: " + os.getcwd()+"/output.jpg")
-                cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-			
+                cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))			
 		
         if not ret_img :
             return None,None
@@ -180,17 +180,15 @@ class Detector:
         prev_time2 = time.time()
         while(1):
 			#reading the video frame by frame
-            ret,frame = cap.read()
-            if not ret:
-                break
+			ret,frame = cap.read()
+			if not ret:
+				break
 
-            (h, w) = frame.shape[:2]
-            out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-            centerbottom = get_center_bottom(all_coordinates)
-            out_video.append(out_frame)
-			# k = cv2.waitKey(1)
-			# if k == ord('q'):
-			# 	break
+			(h, w) = frame.shape[:2]
+			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+			centerbottom = get_center_bottom(all_coordinates)
+			out_video.append(out_frame)
+
 
         cap.release()
         print("Time taken is:" + str(time.time() - prev_time2))
