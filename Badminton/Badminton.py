@@ -26,12 +26,12 @@ class Detector:
         self.tiny = tiny
         self.Windows = Windows
 
-    def detect_image(self,model,img,PIL_image_flag = True):
+    def detect_image(self,model,img):
 
-        if PIL_image_flag == False:
-			# You may need to convert the color.
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(img)
+        img = np.asarray(img)
+		# You may need to convert the color.
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
         self.img = img
 
 		# scale and pad image
@@ -107,10 +107,8 @@ class Detector:
         self.img_src = img_src
         prev_time = time.time()
 
-        prev_time = time.time()
-
         if type(img_src) == str : #if input is image path
-            img = Image.open(self.img_src)
+            img = cv2.imread(self.img_src)
         elif type(img_src) == np.ndarray : #if input is image array
             img = Image.fromarray(self.img_src)
 
@@ -157,8 +155,6 @@ class Detector:
         else:
             pass
 						
-		# save image
-		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
         if display_detection == True:
             cv2.imshow("Final output", out_img)
         if save_detection == True:
@@ -267,5 +263,3 @@ class Detector:
         cv2.destroyAllWindows()
         plt.savefig('./Badminton/images/heatmap.png',bbox_inches='tight')
         plt.show()
-
-
