@@ -224,3 +224,4 @@ class Detector:
 		print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 		out.release()
 		cv2.destroyAllWindows()
+
