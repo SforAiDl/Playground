@@ -6,10 +6,42 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
+import cv2
 
-#import matplotlib.pyplot as plt
-#import matplotlib.patches as patches
+positions=[]
+positions2=[]
+count =0 
 
+def draw_circle(event, x, y, flags, image):
+
+    global positions,count
+
+    # If left button is clicked then store the position where pointer is
+    if event == cv2.EVENT_LBUTTONUP:
+        cv2.circle(image, (x, y), 2, (0, 0, 255), 2)
+        positions.append([x, y])
+        if count != 3:
+            positions2.append([x, y])
+        elif count == 3:
+            positions2.insert(2, [x, y])
+        count += 1
+    return positions
+
+
+def get_court_coordinates(image):
+    print("\n##########################################################\n")
+    print("Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape")
+    print("\n##########################################################\n")
+    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape')
+    cv2.setMouseCallback('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', draw_circle,image)
+               
+    while True:
+        cv2.imshow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', image)
+        k = cv2.waitKey(20) & 0xFF
+        if k == 27 or (len(positions) > 0 and len(positions) == 4):
+            break
+
+    cv2.destroyAllWindows()
 
 def PIL_to_OpenCV(pil_image):
     open_cv_image = np.array(pil_image)
