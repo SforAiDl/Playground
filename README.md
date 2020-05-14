@@ -28,7 +28,7 @@ obj.detect_players_image("Badminton/images/bad.jpg")
 
 from Badminton.Badminton import Detector
 obj = Detector()
-obj.detect_players_video("Badminton/images/video.mp4")
+obj.detect_players_video("Badminton/images/video2.mp4")
 
 ################################################################
 
@@ -37,7 +37,7 @@ obj.detect_players_video("Badminton/images/video.mp4")
 
 from Badminton.Badminton import Detector
 obj = Detector(tiny=True)
-obj.detect_players_video("Badminton/images/video.mp4")
+obj.detect_players_video("Badminton/images/video2.mp4")
 
 ################################################################
 
@@ -45,7 +45,7 @@ obj.detect_players_video("Badminton/images/video.mp4")
 
 from Badminton.Badminton import Detector
 obj = Detector()
-obj.get_heatmap("Badminton/images/video.mp4")
+obj.get_heatmap("Badminton/images/video2.mp4")
 
 ################################################################
 
