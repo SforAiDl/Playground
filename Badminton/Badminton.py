@@ -148,9 +148,7 @@ class Detector:
 						
 		else:
 			pass
-						
-		# save image
-		# plt.savefig(img_path.replace(".jpeg", "-det.jpeg"), bbox_inches='tight', pad_inches=0.0)
+
 		if display_detection == True:
 			cv2.imshow("Final output", out_img)
 		if save_detection == True:
@@ -184,9 +182,6 @@ class Detector:
 			out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 			centerbottom = get_center_bottom(all_coordinates)
 			out_video.append(out_frame)
-			# k = cv2.waitKey(1)
-			# if k == ord('q'):
-			# 	break
 
 		cap.release()
 		print("Time taken is:" + str(time.time() - prev_time2))
