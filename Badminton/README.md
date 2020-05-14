@@ -13,6 +13,6 @@ Note: Weights can be downlaoded using the download_weights.sh script in Badminto
 
 ![Example of output of Detector](./sample_output.png)
 
-## Sample Output of Detector
+## Sample Output of Heatmap
 
 ![Example of output of Heatmap](./images/heatmap.png)
