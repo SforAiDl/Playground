@@ -8,14 +8,13 @@ from torch.autograd import Variable
 import numpy as np
 import cv2
 
-positions = []
-positions2 = []
-count = 0
-
+positions=[]
+positions2=[]
+count =0 
 
 def draw_circle(event, x, y, flags, image):
 
-    global positions, count
+    global positions,count
 
     # If left button is clicked then store the position where pointer is
     if event == cv2.EVENT_LBUTTONUP:
@@ -31,53 +30,39 @@ def draw_circle(event, x, y, flags, image):
 
 def get_court_coordinates(image):
     print("\n##########################################################\n")
-    print(
-        "Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape"
-    )
+    print("Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape")
     print("\n##########################################################\n")
-    cv2.namedWindow(
-        "Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape"
-    )
-    cv2.setMouseCallback(
-        "Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape",
-        draw_circle,
-        image,
-    )
-
+    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape')
+    cv2.setMouseCallback('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', draw_circle,image)
+               
     while True:
-        cv2.imshow(
-            "Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape",
-            image,
-        )
+        cv2.imshow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', image)
         k = cv2.waitKey(20) & 0xFF
         if k == 27 or (len(positions) > 0 and len(positions) == 4):
             break
 
     cv2.destroyAllWindows()
 
-
 def PIL_to_OpenCV(pil_image):
     open_cv_image = np.array(pil_image)
-    # Convert RGB to BGR
-    img = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
+    # Convert RGB to BGR 
+    img = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)    
     return img
-
 
 def get_center_bottom(coordinate):
     centerbottom = []
     if coordinate is not None:
-        for x in range(int(len(coordinate) / 4)):
-            start = 4 * x
-            end = start + 4
+        for x in range(int(len(coordinate)/4)):
+            start = 4*x
+            end = start+4
             x1, y1, box_w, box_h = coordinate[start:end]
-            x_centre = x1 + (float(box_w / 2))
+            x_centre = x1 + (float(box_w/2))
             y_bottom = y1 + box_h
             centerbottom.append(x_centre)
             centerbottom.append(y_bottom)
         return centerbottom
     else:
         return None
-
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -174,11 +159,7 @@ def bbox_iou_numpy(box1, box2):
     iw = np.maximum(iw, 0)
     ih = np.maximum(ih, 0)
 
-    ua = (
-        np.expand_dims((box1[:, 2] - box1[:, 0]) * (box1[:, 3] - box1[:, 1]), axis=1)
-        + area
-        - iw * ih
-    )
+    ua = np.expand_dims((box1[:, 2] - box1[:, 0]) * (box1[:, 3] - box1[:, 1]), axis=1) + area - iw * ih
 
     ua = np.maximum(ua, np.finfo(float).eps)
 
@@ -212,13 +193,9 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
         if not image_pred.size(0):
             continue
         # Get score and class with highest confidence
-        class_conf, class_pred = torch.max(
-            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
-        )
+        class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat(
-            (image_pred[:, :5], class_conf.float(), class_pred.float()), 1
-        )
+        detections = torch.cat((image_pred[:, :5], class_conf.float(), class_pred.float()), 1)
         # Iterate through all predicted classes
         unique_labels = detections[:, -1].cpu().unique()
         if prediction.is_cuda:
@@ -245,25 +222,14 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
             max_detections = torch.cat(max_detections).data
             # Add max detections to outputs
             output[image_i] = (
-                max_detections
-                if output[image_i] is None
-                else torch.cat((output[image_i], max_detections))
+                max_detections if output[image_i] is None else torch.cat((output[image_i], max_detections))
             )
 
     return output
 
 
 def build_targets(
-    pred_boxes,
-    pred_conf,
-    pred_cls,
-    target,
-    anchors,
-    num_anchors,
-    num_classes,
-    grid_size,
-    ignore_thres,
-    img_dim,
+    pred_boxes, pred_conf, pred_cls, target, anchors, num_anchors, num_classes, grid_size, ignore_thres, img_dim
 ):
     nB = target.size(0)
     nA = num_anchors
@@ -296,9 +262,7 @@ def build_targets(
             # Get shape of gt box
             gt_box = torch.FloatTensor(np.array([0, 0, gw, gh])).unsqueeze(0)
             # Get shape of anchor box
-            anchor_shapes = torch.FloatTensor(
-                np.concatenate((np.zeros((len(anchors), 2)), np.array(anchors)), 1)
-            )
+            anchor_shapes = torch.FloatTensor(np.concatenate((np.zeros((len(anchors), 2)), np.array(anchors)), 1))
             # Calculate iou between gt and anchor shapes
             anch_ious = bbox_iou(gt_box, anchor_shapes)
             # Where the overlap is larger than threshold set mask to zero (ignore)
