@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences version="1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/Prefs_v1.1.xsd">
+    <pref key="FrameSize">
+        <Object class="java.awt.Dimension">1920,1047</Object>
+    </pref>
+    <prefGroup key="TranscriptionTable.ColumnWidth">
+        <pref key="1">
+            <Int>482</Int>
+        </pref>
+    </prefGroup>
+    <prefList key="SegmentationViewer.TierOrder">
+        <String>default</String>
+        <String>fineanno</String>
+    </prefList>
+    <pref key="LayoutManager.SelectedTabIndex">
+        <Int>7</Int>
+    </pref>
+    <pref key="LayoutManager.MediaAreaWidth">
+        <Int>1351</Int>
+    </pref>
+    <pref key="LayoutManager.VisibleMultiTierViewer">
+        <String>mpi.eudico.client.annotator.viewer.TimeLineViewer</String>
+    </pref>
+    <pref key="SegmentationViewer.ZoomLevel">
+        <Float>496.0</Float>
+    </pref>
+    <pref key="MultiTierViewer.ActiveTierName">
+        <String>fineanno</String>
+    </pref>
+    <pref key="TranscriptionTable.LastActiveRow">
+        <Int>1277</Int>
+    </pref>
+    <pref key="SelectionEndTime">
+        <Long>2446903</Long>
+    </pref>
+    <pref key="LayoutManager.MediaAreaHeight">
+        <Int>521</Int>
+    </pref>
+    <pref key="ExportTabDialog.SelectTiersMode">
+        <String>Tier</String>
+    </pref>
+    <prefList key="ExportTabDialog.TierOrder">
+        <String>default</String>
+        <String>fineanno</String>
+    </prefList>
+    <pref key="LayoutManager.CurrentMode">
+        <Int>2</Int>
+    </pref>
+    <prefGroup key="CommentViewer.Columns">
+        <pref key="Sender">
+            <Int>0</Int>
+        </pref>
+        <pref key="Comment">
+            <Int>75</Int>
+        </pref>
+        <pref key="Creation Date">
+            <Int>75</Int>
+        </pref>
+        <pref key="Tier">
+            <Int>75</Int>
+        </pref>
+        <pref key="Modification Date">
+            <Int>75</Int>
+        </pref>
+        <pref key="Recipient">
+            <Int>0</Int>
+        </pref>
+        <pref key="Start Time">
+            <Int>75</Int>
+        </pref>
+        <pref key="Initials">
+            <Int>75</Int>
+        </pref>
+        <pref key="End Time">
+            <Int>75</Int>
+        </pref>
+        <pref key="Thread">
+            <Int>75</Int>
+        </pref>
+    </prefGroup>
+    <prefList key="ExportTabDialog.selectedTiers">
+        <String>fineanno</String>
+    </prefList>
+    <pref key="SegmentationViewer.ActiveTier">
+        <String>fineanno</String>
+    </pref>
+    <prefList key="CommentViewer.Columns.Order">
+        <String>Start Time</String>
+        <String>End Time</String>
+        <String>Tier</String>
+        <String>Initials</String>
+        <String>Comment</String>
+        <String>Thread</String>
+        <String>Sender</String>
+        <String>Recipient</String>
+        <String>Creation Date</String>
+        <String>Modification Date</String>
+    </prefList>
+    <pref key="ActiveRecognizerName">
+        <String>AAM-LR Phone level audio segmentation</String>
+    </pref>
+    <pref key="MediaControlVolume">
+        <Float>0.0</Float>
+    </pref>
+    <pref key="FrameLocation">
+        <Object class="java.awt.Point">0,33</Object>
+    </pref>
+    <prefGroup key="IndividualPlayerMuteSoloSettings"/>
+    <pref key="TimeLineViewer.ZoomLevel">
+        <Float>496.0</Float>
+    </pref>
+    <prefList key="TranscriptionTable.NonEditableTiers"/>
+    <prefList key="TranscriptionTable.ColumnTypes">
+        <String>default-lt</String>
+    </prefList>
+    <pref key="SelectionBeginTime">
+        <Long>2446120</Long>
+    </pref>
+    <prefGroup key="AAM-LR Phone level audio segmentation">
+        <pref key="base_url">
+            <String>http://lux17.mpi.nl/aamlr/</String>
+        </pref>
+    </prefGroup>
+    <pref key="MediaControlRate">
+        <Float>0.8</Float>
+    </pref>
+    <prefGroup key="TranscriptionTable.TierMap">
+        <prefList key="fineanno">
+            <String>fineanno</String>
+        </prefList>
+        <prefList key="default">
+            <String>default</String>
+        </prefList>
+    </prefGroup>
+    <pref key="TimeScaleBeginTime">
+        <Long>2701699</Long>
+    </pref>
+    <pref key="MediaTime">
+        <Long>2446120</Long>
+    </pref>
+    <prefGroup key="TierColors">
+        <pref key="fineanno">
+            <Object class="java.awt.Color">90,0,90</Object>
+        </pref>
+        <pref key="default">
+            <Object class="java.awt.Color">160,90,160</Object>
+        </pref>
+    </prefGroup>
+    <prefList key="MultiTierViewer.TierOrder">
+        <String>default</String>
+        <String>fineanno</String>
+    </prefList>
+    <pref key="TranscriptionTable.LastActiveColumn">
+        <String>default-lt</String>
+    </pref>
+    <pref key="LayoutManager.SplitPaneDividerLocation">
+        <Int>0</Int>
+    </pref>
+    <prefList key="CommentViewer.Columns.Hidden">
+        <String>Sender</String>
+        <String>Recipient</String>
+    </prefList>
+    <prefList key="ExportTabDialog.HiddenTiers">
+        <String>default</String>
+    </prefList>
+    <pref key="SegmentationManager.SelectedTabIndex">
+        <Int>1</Int>
+    </pref>
+    <prefList key="SegmentationViewer.HiddenTiers"/>
+    <prefList key="TranscriptionTable.HiddenTiers"/>
+</preferences>
