@@ -16,7 +16,7 @@ sh setup_pip.sh
 
 ## To test, run test.py or simply open up a new terminal and enter the following code: 
 ```
-# For singe image:
+# For single image:
 
 from Badminton.Badminton import Detector
 obj = Detector()
@@ -48,5 +48,15 @@ obj = Detector()
 obj.get_heatmap("Badminton/images/video2.mp4")
 
 ################################################################
+
+```
+
+## To test this code in Windows simply change the code in test.py to
+
+```
+
+from Badminton.Badminton import Detector
+obj = Detector(Windows=True)
+obj.detect_players_video("Badminton/images/video2.mp4")
 
 ```
