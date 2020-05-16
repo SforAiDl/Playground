@@ -228,7 +228,6 @@ class Detector:
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        pbar=tqdm(total=total_frame)
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
 
@@ -237,6 +236,7 @@ class Detector:
         else:
             frames_skipped=1
         if optimization:
+
             count_of_frames=0
             print("Optimization is True")
             if self.tiny:
@@ -254,13 +254,18 @@ class Detector:
                 #reading the video frame by frame
                 ret,frame = cap.read()
                 prev_time1=time.time()
+
                 if not ret:
                     break
                 (h, w) = frame.shape[:2]
                 if count_of_frames % frames_skipped == 0:
                     out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-                    if count_of_frames == 0: #for first frame
-                        frame_list=[] #initialize n frame list
+
+                    if(no_frame_read==1):
+                        pbar=tqdm(total=total_frame)
+                    if count_of_frames==0: #for first frame
+
+                      frame_list=[] #initialize n frame list
                         for f in range(frames_skipped):
                             frame_list.append(frame)
                         #ensure first frame detects 2 players-->
@@ -298,6 +303,8 @@ class Detector:
             print("detect_players_image is run in the video every ",frames_skipped, " frames")
             no_frame_read = 1
             while(1):
+                if(no_frame_read==1):
+                    pbar=tqdm(total=total_frame)
                 #reading the video frame by frame
                 ret,frame = cap.read()
                 prev_time1=time.time()
