@@ -22,7 +22,16 @@ import cv2
 
 
 class Detector:
-    def __init__(self, config_folder="Badminton/config", config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names', img_size=416, conf_thres=0.8, nms_thres=0.4, tiny=False, Windows=False):
+    def __init__(self,
+                 config_folder="Badminton/config",
+                 config_path='Badminton/config/yolov3.cfg',
+                 weights_path='Badminton/config/yolov3.weights',
+                 class_path='Badminton/config/coco.names',
+                 img_size=416,
+                 conf_thres=0.8,
+                 nms_thres=0.4,
+                 tiny=False,
+                 Windows=False):
         self.config_path = config_path
         self.weights_path = weights_path
         self.class_path = class_path
@@ -41,14 +50,18 @@ class Detector:
         self.img = img
 
         # scale and pad image
-        ratio = min(self.img_size/self.img.size[0], self.img_size/self.img.size[1])
+        ratio = min(self.img_size/self.img.size[0],
+                    self.img_size/self.img.size[1])
         imw = round(self.img.size[0] * ratio)
         imh = round(self.img.size[1] * ratio)
-        img_transforms = transforms.Compose([ transforms.Resize((imh, imw)),
-            transforms.Pad((max(int((imh-imw)/2),0), max(int((imw-imh)/2),0), max(int((imh-imw)/2),0), max(int((imw-imh)/2),0)),
-                            (128,128,128)),
-                    transforms.ToTensor(),
-             ])
+        img_transforms = transforms.Compose([
+            transforms.Resize((imh, imw)),
+            transforms.Pad((max(int((imh-imw)/2), 0),
+                            max(int((imw-imh)/2), 0),
+                            max(int((imh-imw)/2), 0),
+                            max(int((imw-imh)/2), 0)),
+                            (128, 128, 128)),
+                            transforms.ToTensor()])
         # convert image to Tensor
         image_tensor = img_transforms(self.img).float()
         image_tensor = image_tensor.unsqueeze_(0)
@@ -76,7 +89,11 @@ class Detector:
         names = fp.read().split("\n")[:-1]
         return names
 
-    def detect_players_image(self, img_src, display_detection=True, save_detection=False, ret_img=False):
+    def detect_players_image(self,
+                             img_src,
+                             display_detection=True,
+                             save_detection=False,
+                             ret_img=False):
 
         if self.tiny == True:
             self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -160,11 +177,11 @@ class Detector:
                     bbox_colors = random.sample(colors, n_cls_preds)
                     color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
                     cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
-                        
+                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2)  # purple bbox
+
         else:
             pass
-                        
+
 
         if display_detection == True:
             cv2.imshow("Final output", out_img)
@@ -178,137 +195,156 @@ class Detector:
             else:
                 print("Output image can be found here: " + os.getcwd()+"/output.jpg")
                 cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-            
-        
-        if not ret_img :
+
+
+        if not ret_img:
             return None,None
-        else :
-            return out_img,coordinate
+        else:
+            return out_img, coordinate
 
     def draw_boxes(self, frame_to_draw, coord_list_inp):
         cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox 
+        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
         cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox 
+        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
         return frame_to_draw
 
     def calculate_step(self, prev_coords, current_coords, num_frames_skipped):
-        step=[0,0,0,0,0,0,0,0]
+        step = [0, 0, 0, 0, 0, 0, 0, 0]
         for i in range(len(prev_coords)):
             step[i]=(current_coords[i]- prev_coords[i])/num_frames_skipped
         return step
 
     def get_frame_coords(self, coords, step, no_of_steps):
-        new_coords=[0,0,0,0,0,0,0,0]
+        new_coords = [0, 0, 0, 0, 0, 0, 0, 0]
         for i in range(len(coords)):
-            new_coords[i]=int(coords[i]+(step[i]*no_of_steps))
+            new_coords[i] = int(coords[i] + (step[i] * no_of_steps))
         return new_coords
 
     def check_if_two_players_detected(self, prev_coords, current_coords):
-        if len(current_coords)!=8:
-            #find which player  is not detected
-            if len(current_coords)==4:
-                diff_player1=abs(current_coords[0]-prev_coords[0])+abs(current_coords[1]-prev_coords[1])
-                diff_player2=abs(current_coords[0]-prev_coords[4])+abs(current_coords[1]-prev_coords[5])
-                if diff_player2>diff_player1:
-                    new_current_coords=[current_coords[0], current_coords[1], current_coords[2], current_coords[3], prev_coords[4],prev_coords[5], prev_coords[6], prev_coords[7]]
+        if len(current_coords)!= 8:
+            # find which player  is not detected
+            if len(current_coords) == 4:
+                diff_player1 = abs(current_coords[0] - prev_coords[0]) + abs(current_coords[1] - prev_coords[1])
+                diff_player2 = abs(current_coords[0] - prev_coords[4]) + abs(current_coords[1] - prev_coords[5])
+                if diff_player2 > diff_player1:
+                    new_current_coords=[current_coords[0],
+                                        current_coords[1],
+                                        current_coords[2],
+                                        current_coords[3],
+                                        prev_coords[4],
+                                        prev_coords[5],
+                                        prev_coords[6],
+                                        prev_coords[7]]
                 else:
-                    new_current_coords=[prev_coords[0], prev_coords[1], prev_coords[2], prev_coords[3], current_coords[0],current_coords[1], current_coords[2], current_coords[3]]
+                    new_current_coords = [prev_coords[0],
+                                          prev_coords[1],
+                                          prev_coords[2],
+                                          prev_coords[3],
+                                          current_coords[0],
+                                          current_coords[1],
+                                          current_coords[2],
+                                          current_coords[3]]
             else:
-                new_current_coords=prev_coords
+                new_current_coords = prev_coords
         else:
-            new_current_coords=current_coords
+            new_current_coords = current_coords
         return new_current_coords
 
-    def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
-    
+    def detect_players_video(self,
+                             video_path,
+                             optimization=False,
+                             frames_skipped_input=1):
 
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        pbar=tqdm(total=total_frame)
+        pbar = tqdm(total=total_frame)
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
-        
-        if optimization==True:
-            frames_skipped=frames_skipped_input
+
+        if optimization == True:
+            frames_skipped = frames_skipped_input
         else:
-            frames_skipped=1
-        if optimization==True:
-            count_of_frames=0
+            frames_skipped = 1
+        if optimization == True:
+            count_of_frames = 0
             print("Optimization is True")
-            if self.tiny==True :
+            if self.tiny == True :
                 print("tiny is True")
-                if frames_skipped==1: #if user has not put an input frames skipped
-                    frames_skipped=3
+                if frames_skipped == 1:
+                    # if user has not put an input frames skipped
+                    frames_skipped = 3
             else:
                 print("tiny is False")
-                if frames_skipped==1:#if user has not put an input frames skipped
-                    frames_skipped=5
-            print("detect_players_image is run in the video every ",frames_skipped, " frames")
+                if frames_skipped == 1:
+                    # if user has not put an input frames skipped
+                    frames_skipped = 5
+            print("detect_players_image is run in the video every ", frames_skipped}," frames")
             no_frame_read = 1
             while(1):
-                #reading the video frame by frame
+                # reading the video frame by frame
                 ret,frame = cap.read()
-                prev_time1=time.time()
+                prev_time1 = time.time()
                 if not ret:
                     break
                 (h, w) = frame.shape[:2]
-                if count_of_frames%frames_skipped==0: 
-                    out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-                    if count_of_frames==0: #for first frame
-                        frame_list=[] #initialize n frame list
+                if count_of_frames % frames_skipped == 0:
+                    out_frame, all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                    if count_of_frames == 0: # for first frame
+                        frame_list = [] # initialize n frame list
                         for f in range(frames_skipped):
                             frame_list.append(frame)
-                        #ensure first frame detects 2 players-->
-                        if len(all_coordinates)!=8: 
+                        # ensure first frame detects 2 players-->
+                        if len(all_coordinates)!= 8:
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
-                        previous_frame_coordiantes=all_coordinates
-                    else: #for every frame read thereafter
-                        current_coords_list=self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
-                        step_list=self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
+                        previous_frame_coordiantes = all_coordinates
+                    else:
+                        #for every frame read thereafter
+                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
+                        step_list = self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
                         for frame_no in range(1, frames_skipped):
-                            frame_coords=self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
-                            frame_list[frame_no]=self.draw_boxes(frame_list[frame_no], frame_coords)
+                            frame_coords = self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
+                            frame_list[frame_no] = self.draw_boxes(frame_list[frame_no], frame_coords)
                             out_video.append(frame_list[frame_no])
-                        previous_frame_coordiantes=current_coords_list
+                        previous_frame_coordiantes = current_coords_list
                     out_video.append(out_frame)
-                    frame_list[0]=out_frame
+                    frame_list[0] = out_frame
                     current_time = time.time()
                     time_elapsed = current_time - prev_time1
-                    frame_left_read = total_frame-no_frame_read
-                    eta = frame_left_read*time_elapsed
+                    frame_left_read = total_frame - no_frame_read
+                    eta = frame_left_read * time_elapsed
                     no_frame_read += frames_skipped
                     pbar.update(frames_skipped)
                     k = cv2.waitKey(1)
                     if k == ord('q'):
                         break
-                        
+
                 else:
-                    frame_list[count_of_frames%frames_skipped]=frame
-                count_of_frames=count_of_frames+1
+                    frame_list[count_of_frames % frames_skipped] = frame
+                count_of_frames = count_of_frames + 1
         else:
             print("Optimization is False")
             print("detect_players_image is run in the video every ",frames_skipped, " frames")
-            no_frame_read = 1 
+            no_frame_read = 1
             while(1):
                 #reading the video frame by frame
                 ret,frame = cap.read()
-                prev_time1=time.time()  
+                prev_time1 = time.time()
                 if not ret:
                     break
 
                 (h, w) = frame.shape[:2]
-                out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                out_frame,all_coordinates = self.detect_players_image(frame, ret_img=1, display_detection=False)
                 centerbottom = get_center_bottom(all_coordinates)
                 out_video.append(out_frame)
                 current_time = time.time()
                 time_elapsed = current_time - prev_time1
-                frame_left_read = total_frame-no_frame_read
-                eta = frame_left_read*time_elapsed
+                frame_left_read = total_frame - no_frame_read
+                eta = frame_left_read * time_elapsed
                 no_frame_read += 1
                 pbar.update(1)
                 k = cv2.waitKey(1)
@@ -319,10 +355,10 @@ class Detector:
         pbar.close()
         print("Time taken is:" + str(time.time() - prev_time2))
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        out = cv2.VideoWriter(video_path.replace(
-            ".mp4", "-out.mp4"), fourcc, fps, (w, h))
+        out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"), fourcc, fps, (w, h))
+
         for i in range(len(out_video)):
-            out.write(out_video [i])
+            out.write(out_video[i])
         print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 
         out.release()
@@ -332,13 +368,13 @@ class Detector:
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_count = 0 
-    
-        count=0
+        frame_count = 0
+
+        count = 0
 
         while(1):
             #reading the video frame by frame
-            ret,frame = cap.read()
+            ret, frame = cap.read()
             if not ret:
                 break
             # For the first frame, take the 4 court co-ordinates input
@@ -351,7 +387,7 @@ class Detector:
                     print("Error!!! Select the 4 coordinates of the court correctly")
                 # These are points of court selected by user
                 pts1 = np.float32(positions)
-                # Size of 2D image we want to generate 
+                # Size of 2D image we want to generate
 
                 pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
                 matrix, status = cv2.findHomography(pts1, pts2)
@@ -366,7 +402,9 @@ class Detector:
 
             (h, w) = frame.shape[:2]
             out_frame, all_coordinates = self.detect_players_image(
-                frame, ret_img=1, display_detection=False)
+                                             frame,
+                                             ret_img=1,
+                                             display_detection=False)
             centerbottom = get_center_bottom(all_coordinates)
 
             if len(centerbottom) != 0:
@@ -381,7 +419,13 @@ class Detector:
 
 
                     bbox = patches.Rectangle(
-                        (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                               (pointsOut1[0][0][0],
+                               pointsOut1[0][0][1]),
+                               3,
+                               3,
+                               linewidth=2,
+                               edgecolor='r',
+                               facecolor='none')
                     ax.add_patch(bbox)
             frame_count += 1
             k = cv2.waitKey(1)
