@@ -13,6 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torch.autograd import Variable
+from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -225,6 +226,7 @@ class Detector:
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        pbar=tqdm(total=total_frame)
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
         
@@ -279,9 +281,8 @@ class Detector:
                     time_elapsed = current_time - prev_time1
                     frame_left_read = total_frame-no_frame_read
                     eta = frame_left_read*time_elapsed
-                    if (frame_left_read % 50 == 0):
-                         print("Time left for processing is ", eta)
-                    no_frame_read += 1
+                    no_frame_read += frames_skipped
+                    pbar.update(frames_skipped)
                     k = cv2.waitKey(1)
                     if k == ord('q'):
                         break
@@ -308,14 +309,14 @@ class Detector:
                 time_elapsed = current_time - prev_time1
                 frame_left_read = total_frame-no_frame_read
                 eta = frame_left_read*time_elapsed
-                if (frame_left_read % 50 == 0):
-                     print("Time left for processing is ", eta)
                 no_frame_read += 1
+                pbar.update(1)
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
 
         cap.release()
+        pbar.close()
         print("Time taken is:" + str(time.time() - prev_time2))
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
         out = cv2.VideoWriter(video_path.replace(
