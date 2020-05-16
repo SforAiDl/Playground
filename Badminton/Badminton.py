@@ -157,6 +157,7 @@ class Detector:
                         
         if display_detection == True:
             cv2.imshow("Final output", out_img)
+            cv2.waitkey(0)
         if save_detection == True:
             if type(img_src) == str:
                 print("Output image can be found here: " + img_src.replace(".jpg", "-out.jpg"))
