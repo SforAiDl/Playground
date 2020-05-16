@@ -1,24 +1,25 @@
+import datetime
+import os
+import random
+import sys
+import subprocess
+import time
+
+import torch
+import cv2
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+from torch.autograd import Variable
+from tqdm import tqdm
+from PIL import Image
+
 from Badminton.utilities.utils import *
 from Badminton.utilities.datasets import *
 from Badminton.utilities.parse_config import *
 from Badminton.utilities.models import *
 
-import os
-import sys
-import time
-import datetime
-import random
-import subprocess
-import torch
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-from tqdm import tqdm
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from PIL import Image
-import cv2
 
 
 class Detector:
