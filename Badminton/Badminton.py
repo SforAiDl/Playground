@@ -328,14 +328,31 @@ class Detector:
         out.release()
         cv2.destroyAllWindows()
 
-    def get_heatmap(self, video_path):
+    def get_heatmap(self, video_path, optimization=False, frames_skipped_input=1):
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0 
-    
+        if optimization==True:
+            frames_skipped=frames_skipped_input
+        else:
+            frames_skipped=1
+        if optimization==True:
+            
+            print("Optimization is True")
+            if self.tiny==True :
+                print("tiny is True")
+                if frames_skipped==1: #if user has not put an input frames skipped
+                    frames_skipped=3
+            else:
+                print("tiny is False")
+                if frames_skipped==1:#if user has not put an input frames skipped
+                    frames_skipped=5
+            print("get_heatmap is run in the video every ",frames_skipped, " frames")
+            no_frame_read = 1
+        
         count=0
-
+        pbar = tqdm(total=180)
         while(1):
             #reading the video frame by frame
             ret,frame = cap.read()
@@ -364,29 +381,39 @@ class Detector:
                 print(frame_count)
                 prev_time2 = time.time()
 
-            (h, w) = frame.shape[:2]
-            out_frame, all_coordinates = self.detect_players_image(
-                frame, ret_img=1, display_detection=False)
-            centerbottom = get_center_bottom(all_coordinates)
+            if frame_count%frames_skipped == 0:
+                (h, w) = frame.shape[:2]
+                out_frame, all_coordinates = self.detect_players_image(
+                    frame, ret_img=1, display_detection=False)
+                centerbottom = get_center_bottom(all_coordinates)
 
-            if len(centerbottom) != 0:
-                for i in range(0, len(centerbottom), 2):
+                if len(centerbottom) != 0:
+                    for i in range(0, len(centerbottom), 2):
 
-                    a = np.array(
-                        [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                    a = np.array([a])
+                        a = np.array(
+                            [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                        a = np.array([a])
 
-                    # Position of player after Perspective transformation
-                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
+                        # Position of player after Perspective transformation
+                        pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-                    bbox = patches.Rectangle(
-                        (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
-                    ax.add_patch(bbox)
-            frame_count += 1
-            k = cv2.waitKey(1)
-            if k == ord('q'):
-                break
+                        bbox = patches.Rectangle(
+                            (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                        ax.add_patch(bbox)
+                frame_count += 1
+                pbar.update(1)
+                k = cv2.waitKey(1)
+                if k == ord('q'):
+                    break
+            else:
+                frame_count += 1
+                pbar.update(1)
+                k = cv2.waitKey(1)
+                if k == ord('q'):
+                    break
+
+        pbar.close()    
         cap.release()
         print("Time taken is:" + str(time.time() - prev_time2))
 
