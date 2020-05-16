@@ -78,22 +78,22 @@ class Detector:
 
     def detect_players_image(self, img_src, display_detection=True, save_detection=False, ret_img=False):
 
-        if self.tiny == True:
+        if self.tiny:
             self.weights_path = 'Badminton/config/yolov3-tiny.weights'
             self.config_path = 'Badminton/config/yolov3-tiny.cfg'
 
         isFile = os.path.isfile(self.weights_path)
-        if isFile == False:
+        if not isFile:
             os.chdir(self.config_folder)
             print("Downloading the weights")
             try:
-                if self.Windows == False:
-                    if self.tiny == False:
+                if not self.Windows:
+                    if not self.tiny:
                         os.system("bash download_weights.sh")
                     else:
                         os.system("bash download_tiny_weights.sh")
                 else:
-                    if self.tiny == False:
+                    if not self.tiny:
                         os.system("powershell.exe download_weights.ps1")
                     else:
                         os.system("powershell.exe download_tiny_weights.ps1")
@@ -115,9 +115,11 @@ class Detector:
         self.img_src = img_src
         prev_time = time.time()
 
-        if type(img_src) == str:  # if input is image path
+        if isinstance(img_src, str):
+            # if input is image path
             img = cv2.imread(self.img_src)
-        elif type(img_src) == np.ndarray:  # if input is image array
+        elif isinstance(img_src, np.ndarray):
+            # if input is image array
             img = Image.fromarray(self.img_src)
 
         detections = self.detect_image(model, img)
@@ -160,17 +162,17 @@ class Detector:
                     bbox_colors = random.sample(colors, n_cls_preds)
                     color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
                     cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox 
-                        
+                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox
+
         else:
             pass
-                        
 
-        if display_detection == True:
+
+        if display_detection:
             cv2.imshow("Final output", out_img)
             cv2.waitkey(0)
-        if save_detection == True:
-            if type(img_src) == str:
+        if save_detection:
+            if isinstance(img_src, str):
                 print("Output image can be found here: " +
                       img_src.replace(".jpg", "-out.jpg"))
                 cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),
@@ -178,8 +180,8 @@ class Detector:
             else:
                 print("Output image can be found here: " + os.getcwd()+"/output.jpg")
                 cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
-            
-        
+
+
         if not ret_img :
             return None,None
         else :
@@ -187,9 +189,9 @@ class Detector:
 
     def draw_boxes(self, frame_to_draw, coord_list_inp):
         cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox 
+        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
         cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox 
+        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
         return frame_to_draw
 
     def calculate_step(self, prev_coords, current_coords, num_frames_skipped):
@@ -205,12 +207,12 @@ class Detector:
         return new_coords
 
     def check_if_two_players_detected(self, prev_coords, current_coords):
-        if len(current_coords)!=8:
-            #find which player  is not detected
+        if len(current_coords)!= 8:
+            # find which player  is not detected
             if len(current_coords)==4:
                 diff_player1=abs(current_coords[0]-prev_coords[0])+abs(current_coords[1]-prev_coords[1])
                 diff_player2=abs(current_coords[0]-prev_coords[4])+abs(current_coords[1]-prev_coords[5])
-                if diff_player2>diff_player1:
+                if diff_player2 > diff_player1:
                     new_current_coords=[current_coords[0], current_coords[1], current_coords[2], current_coords[3], prev_coords[4],prev_coords[5], prev_coords[6], prev_coords[7]]
                 else:
                     new_current_coords=[prev_coords[0], prev_coords[1], prev_coords[2], prev_coords[3], current_coords[0],current_coords[1], current_coords[2], current_coords[3]]
@@ -221,7 +223,7 @@ class Detector:
         return new_current_coords
 
     def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
-    
+
 
         out_video = []
         cap = cv2.VideoCapture(video_path)
@@ -229,21 +231,22 @@ class Detector:
         pbar=tqdm(total=total_frame)
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
-        
-        if optimization==True:
+
+        if optimization:
             frames_skipped=frames_skipped_input
         else:
             frames_skipped=1
-        if optimization==True:
+        if optimization:
             count_of_frames=0
             print("Optimization is True")
-            if self.tiny==True :
+            if self.tiny:
                 print("tiny is True")
-                if frames_skipped==1: #if user has not put an input frames skipped
+                if frames_skipped == 1: # if user has not put an input frames skipped
                     frames_skipped=3
             else:
                 print("tiny is False")
-                if frames_skipped==1:#if user has not put an input frames skipped
+                if frames_skipped == 1:
+                    # if user has not put an input frames skipped
                     frames_skipped=5
             print("detect_players_image is run in the video every ",frames_skipped, " frames")
             no_frame_read = 1
@@ -254,21 +257,21 @@ class Detector:
                 if not ret:
                     break
                 (h, w) = frame.shape[:2]
-                if count_of_frames%frames_skipped==0: 
+                if count_of_frames % frames_skipped == 0:
                     out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
-                    if count_of_frames==0: #for first frame
+                    if count_of_frames == 0: #for first frame
                         frame_list=[] #initialize n frame list
                         for f in range(frames_skipped):
                             frame_list.append(frame)
                         #ensure first frame detects 2 players-->
-                        if len(all_coordinates)!=8: 
+                        if len(all_coordinates)!= 8:
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                         previous_frame_coordiantes=all_coordinates
                     else: #for every frame read thereafter
-                        current_coords_list=self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
+                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
                         step_list=self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
                         for frame_no in range(1, frames_skipped):
                             frame_coords=self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
@@ -286,18 +289,18 @@ class Detector:
                     k = cv2.waitKey(1)
                     if k == ord('q'):
                         break
-                        
+
                 else:
                     frame_list[count_of_frames%frames_skipped]=frame
                 count_of_frames=count_of_frames+1
         else:
             print("Optimization is False")
             print("detect_players_image is run in the video every ",frames_skipped, " frames")
-            no_frame_read = 1 
+            no_frame_read = 1
             while(1):
                 #reading the video frame by frame
                 ret,frame = cap.read()
-                prev_time1=time.time()  
+                prev_time1=time.time()
                 if not ret:
                     break
 
@@ -332,8 +335,8 @@ class Detector:
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_count = 0 
-    
+        frame_count = 0
+
         count=0
 
         while(1):
@@ -351,7 +354,7 @@ class Detector:
                     print("Error!!! Select the 4 coordinates of the court correctly")
                 # These are points of court selected by user
                 pts1 = np.float32(positions)
-                # Size of 2D image we want to generate 
+                # Size of 2D image we want to generate
 
                 pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
                 matrix, status = cv2.findHomography(pts1, pts2)
