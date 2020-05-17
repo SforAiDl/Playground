@@ -51,6 +51,35 @@ positions=[]
 positions2=[]
 count =0 
 
+def heatmap_template(result):
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY) 
+    bw = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 19, -5)
+    horizontal = np.copy(bw)
+    vertical = np.copy(bw)
+    #Horizontal morphology
+    cols = horizontal.shape[1]
+    horizontal_size = cols // 3
+    horizontalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
+    horizontal=cv2.morphologyEx(horizontal,cv2.MORPH_OPEN,horizontalStructure,iterations=1)
+    horizontal = cv2.dilate(horizontal,horizontalStructure,iterations=5)
+    #Vertical morphology
+    rows = vertical.shape[0]
+    verticalsize = rows // 5
+    verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, verticalsize))
+    vertical=cv2.morphologyEx(vertical,cv2.MORPH_OPEN,verticalStructure,iterations=1)
+    vertical = cv2.dilate(vertical,verticalStructure,iterations=2)
+
+    final = vertical+horizontal
+    final[(final.shape[0]//2)-5:(final.shape[0]//2)+5,:]=255 #middle net line
+    
+    green = np.zeros((result.shape), np.uint8)
+    green[:,:,:] = (np.mean(result[:,:,0]),np.mean(result[:,:,1]),np.mean(result[:,:,2]))
+    final_inv = cv2.bitwise_not(final)
+    template = cv2.bitwise_and(~green,~green,mask = final_inv)
+    
+    return ~template
+
+
 def draw_circle(event, x, y, flags, image):
 
     global positions,count
@@ -71,7 +100,7 @@ def get_court_coordinates(image):
     print("\n##########################################################\n")
     print("Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape")
     print("\n##########################################################\n")
-    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape')
+    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape',cv2.WINDOW_NORMAL)
     cv2.setMouseCallback('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', draw_circle,image)
                
     while True:
@@ -339,3 +368,39 @@ def build_targets(
 def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return torch.from_numpy(np.eye(num_classes, dtype="uint8")[y])
+
+def draw_boxes(frame_to_draw, coord_list_inp):
+    cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
+    cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
+    cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
+    cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
+    return frame_to_draw
+
+def calculate_step(prev_coords, current_coords, num_frames_skipped):
+    step=[0,0,0,0,0,0,0,0]
+    for i in range(len(prev_coords)):
+        step[i]=(current_coords[i]- prev_coords[i])/num_frames_skipped
+    return step
+
+def get_frame_coords(coords, step, no_of_steps):
+    new_coords=[0,0,0,0,0,0,0,0]
+    for i in range(len(coords)):
+        new_coords[i]=int(coords[i]+(step[i]*no_of_steps))
+    return new_coords
+
+def check_if_two_players_detected(prev_coords, current_coords):
+    if len(current_coords)!= 8:
+        # find which player  is not detected
+        if len(current_coords)==4:
+            diff_player1=abs(current_coords[0]-prev_coords[0])+abs(current_coords[1]-prev_coords[1])
+            diff_player2=abs(current_coords[0]-prev_coords[4])+abs(current_coords[1]-prev_coords[5])
+            if diff_player2 > diff_player1:
+                new_current_coords=[current_coords[0], current_coords[1], current_coords[2], current_coords[3], prev_coords[4],prev_coords[5], prev_coords[6], prev_coords[7]]
+            else:
+                new_current_coords=[prev_coords[0], prev_coords[1], prev_coords[2], prev_coords[3], current_coords[0],current_coords[1], current_coords[2], current_coords[3]]
+        else:
+            new_current_coords=prev_coords
+    else:
+        new_current_coords=current_coords
+    return new_current_coords
+

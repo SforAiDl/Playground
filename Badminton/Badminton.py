@@ -165,18 +165,18 @@ class Detector:
                     cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox
 
         else:
-            pass
-
+        	pass
 
         if display_detection:
-            cv2.imshow("Final output", out_img)
-            cv2.waitkey(0)
+        	cv2.imshow('Final ouput', out_img)
+        	cv2.waitKey(0)
+        	cv2.destroyAllWindows()
+
         if save_detection:
             if isinstance(img_src, str):
                 print("Output image can be found here: " +
                       img_src.replace(".jpg", "-out.jpg"))
-                cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),
-                            cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
+                cv2.imwrite(img_src.replace(".jpg", "-out.jpg"),cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
             else:
                 print("Output image can be found here: " + os.getcwd()+"/output.jpg")
                 cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
@@ -186,8 +186,6 @@ class Detector:
             return None,None
         else :
             return out_img,coordinate
-
-    
 
     def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
 
@@ -255,6 +253,7 @@ class Detector:
                         for frame_no in range(1, frames_skipped):
                             frame_coords=get_frame_coords(previous_frame_coordiantes, step_list, frame_no)      #  based on the step list, this will return the cooridnates of the frames in between
                             frame_list[frame_no]=draw_boxes(frame_list[frame_no], frame_coords)     #   draws boxes based on the frame based on the coordinates of the boxes obtained 
+
                             out_video.append(frame_list[frame_no])
                         
                         previous_frame_coordiantes=current_coords_list
@@ -347,10 +346,10 @@ class Detector:
                 matrix, status = cv2.findHomography(pts1, pts2)
                 result = cv2.warpPerspective(image, matrix, (1080, 1920))
                 result = PIL_to_OpenCV(result)
-
+                template = heatmap_template(result)
                 plt.figure()
                 fig, ax = plt.subplots(1, figsize=(12, 9))
-                ax.imshow(result)
+                ax.imshow(template)
                 print(frame_count)
                 prev_time2 = time.time()
 
@@ -362,16 +361,17 @@ class Detector:
             if len(centerbottom) != 0:
                 for i in range(0, len(centerbottom), 2):
 
-                    a = np.array(
-                        [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                    a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
                     a = np.array([a])
 
                     # Position of player after Perspective transformation
                     pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-                    bbox = patches.Rectangle(
-                        (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                    #bbox = patches.Rectangle(
+                    #    (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                    bbox = patches.Circle(
+                        (pointsOut1[0][0][0], pointsOut1[0][0][1]),2, linewidth=2, edgecolor='b', facecolor='none')
                     ax.add_patch(bbox)
             frame_count += 1
             k = cv2.waitKey(1)
@@ -383,3 +383,4 @@ class Detector:
         cv2.destroyAllWindows()
         plt.savefig('./Badminton/images/heatmap.png', bbox_inches='tight')
         plt.show()
+
