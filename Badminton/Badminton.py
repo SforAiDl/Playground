@@ -264,7 +264,6 @@ class Detector:
                     if(no_frame_read==1):
                         pbar=tqdm(total=total_frame)
                     if count_of_frames==0: #for first frame
-
                         frame_list=[] #initialize n frame list
                         for f in range(frames_skipped):
                             frame_list.append(frame)
@@ -303,8 +302,6 @@ class Detector:
             print("detect_players_image is run in the video every ",frames_skipped, " frames")
             no_frame_read = 1
             while(1):
-                if(no_frame_read==1):
-                    pbar=tqdm(total=total_frame)
                 #reading the video frame by frame
                 ret,frame = cap.read()
                 prev_time1=time.time()
@@ -319,6 +316,8 @@ class Detector:
                 time_elapsed = current_time - prev_time1
                 frame_left_read = total_frame-no_frame_read
                 eta = frame_left_read*time_elapsed
+                if(no_frame_read==1):
+                    pbar=tqdm(total=total_frame)
                 no_frame_read += 1
                 pbar.update(1)
                 k = cv2.waitKey(1)
