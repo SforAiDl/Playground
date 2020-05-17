@@ -47,6 +47,12 @@ obj.get_heatmap("Badminton/images/video2.mp4")
 
 ################################################################
 
+# For Extracting Annotations
+
+from Badminton.Badminton import Detector
+obj = Detector()
+obj.extract_annotation(file_path = "Badminton/dataset/eaf_files/Yihan-Nehwal-SemiFinals-LondonOlympics-2012.eaf", video_path = Badminton/images/YN/mp4,save_path = 'Badminton/dataset/')
+
 ```
 
 ## To test this code in Windows simply change the code in test.py to
