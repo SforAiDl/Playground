@@ -279,16 +279,16 @@ class Detector:
                         previous_frame_coordiantes = all_coordinates
                     else:
                         #for every frame read thereafter
-                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes,
+                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
                                                                                  all_coordinates)
-                        step_list = self.calculate_step(previous_frame_coordiantes,
+                        step_list = calculate_step(previous_frame_coordiantes,
                                                         current_coords_list,
                                                         frames_skipped)
                         for frame_no in range(1, frames_skipped):
-                            frame_coords = self.get_frame_coords(previous_frame_coordiantes,
+                            frame_coords = get_frame_coords(previous_frame_coordiantes,
                                                                  step_list,
                                                                  frame_no)
-                            frame_list[frame_no] = self.draw_boxes(frame_list[frame_no],
+                            frame_list[frame_no] = draw_boxes(frame_list[frame_no],
                                                                    frame_coords)
                             out_video.append(frame_list[frame_no])
                         previous_frame_coordiantes = current_coords_list
@@ -357,76 +357,244 @@ class Detector:
         out.release()
         cv2.destroyAllWindows()
 
-    def get_heatmap(self, video_path):
+    def get_heatmap(self,
+                    video_path,
+                    optimization=False,
+                    frames_skipped_input=1):
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
-
+        total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         count = 0
+        prev_time2 = time.time()
+
+        if optimization:
+            frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
+            count_of_frames=0
+            print("\nOptimization is True")
+            if self.tiny:
+                print("tiny is True")
+                if frames_skipped == 1: # if user has not put an input frames skipped
+                    frames_skipped=3    # 3 is the default when tiny is True
+            else:
+                print("tiny is False")
+                if frames_skipped == 1: # if user has not put an input frames skipped
+                    frames_skipped=5    # 5 is the default when tiny is False
+            print("detect_players_image is run in the video every",frames_skipped,"frames\n")
+            no_frame_read = 1
+            while(1):
+                #reading the video frame by frame
+                ret, frame = cap.read()
+                prev_time1 = time.time()
+
+                if not ret:
+                    break
+                # For the first frame, take the 4 court co-ordinates input
+
+                if frame_count == 0:
+                    image = frame
+                    get_court_coordinates(image)
+                    print('Position is: ', positions)
+                    if len(positions) < 4:
+                        print("Error!!! Select the 4 coordinates of the court correctly")
+                    # These are points of court selected by user
+                    pts1 = np.float32(positions)
+                    # Size of 2D image we want to generate
+
+                    pts2 = np.float32([[0, 0],
+                                       [1080, 0],
+                                       [0, 1920],
+                                       [1080, 1920]])
+                    matrix, status = cv2.findHomography(pts1, pts2)
+                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
+                    result = PIL_to_OpenCV(result)
+                    template = heatmap_template(result)
+                    plt.figure()
+                    fig, ax = plt.subplots(1, figsize=(12, 9))
+                    ax.imshow(template)
+                    print(frame_count)
+                    prev_time2 = time.time()
+
+                (h, w) = frame.shape[:2]
+                #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
+                #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
+                
+
+                if count_of_frames % frames_skipped == 0:
+                    out_frame, all_coordinates = self.detect_players_image(frame,
+                                                                           ret_img=1,
+                                                                           display_detection=False)
+                    #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
+                    centerbottom = get_center_bottom(all_coordinates)
+
+                    if len(centerbottom) != 0:
+                        for i in range(0, len(centerbottom), 2):
+
+                            a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                            a = np.array([a])
+
+                            # Position of player after Perspective transformation
+                            pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-        while(1):
-            #reading the video frame by frame
-            ret, frame = cap.read()
-            if not ret:
-                break
-            # For the first frame, take the 4 court co-ordinates input
+                            bbox = patches.Circle(
+                                       (pointsOut1[0][0][0],
+                                       pointsOut1[0][0][1]),
+                                       2,
+                                       linewidth=2,
+                                       edgecolor='r',
+                                       facecolor='none')
 
-            if frame_count == 0:
-                image = frame
-                get_court_coordinates(image)
-                print('Position is: ', positions)
-                if len(positions) < 4:
-                    print("Error!!! Select the 4 coordinates of the court correctly")
-                # These are points of court selected by user
-                pts1 = np.float32(positions)
-                # Size of 2D image we want to generate
+                            ax.add_patch(bbox)
+                    
 
-                pts2 = np.float32([[0, 0],
-                                   [1080, 0],
-                                   [0, 1920],
-                                   [1080, 1920]])
-                matrix, status = cv2.findHomography(pts1, pts2)
-                result = cv2.warpPerspective(image, matrix, (1080, 1920))
-                result = PIL_to_OpenCV(result)
-                template = heatmap_template(result)
-                plt.figure()
-                fig, ax = plt.subplots(1, figsize=(12, 9))
-                ax.imshow(template)
-                print(frame_count)
-                prev_time2 = time.time()
+                    if(no_frame_read==1):   #   This snippet is for the progress bar
+                        pbar=tqdm(total=total_frame)
+                    
+                    if count_of_frames==0: #for the first frame
+                        frame_list=[] #initialize a frame list (size will be frames_skipped)
+                        for f in range(frames_skipped):
+                            frame_list.append(frame)
+                        #ensure first frame detects 2 players-->
+                        if len(all_coordinates)!= 8:
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                        previous_frame_coordiantes = all_coordinates
+                    else:
+                        #for every frame read thereafter
+                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
+                                                                                 all_coordinates)
+                        step_list = calculate_step(previous_frame_coordiantes,
+                                                        current_coords_list,
+                                                        frames_skipped)
+                        for frame_no in range(1, frames_skipped):
+                            frame_coords = get_frame_coords(previous_frame_coordiantes,
+                                                                 step_list,
+                                                                 frame_no)
+                            centerbottom = get_center_bottom(frame_coords)
+                            if len(centerbottom) != 0:
+                                for i in range(0, len(centerbottom), 2):
 
-            (h, w) = frame.shape[:2]
-            out_frame, all_coordinates = self.detect_players_image(
-                                             frame,
-                                             ret_img=1,
-                                             display_detection=False)
-            centerbottom = get_center_bottom(all_coordinates)
+                                    a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                                    a = np.array([a])
 
-            if len(centerbottom) != 0:
-                for i in range(0, len(centerbottom), 2):
-
-                    a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                    a = np.array([a])
-
-                    # Position of player after Perspective transformation
-                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
+                                    # Position of player after Perspective transformation
+                                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-                    bbox = patches.Circle(
-                               (pointsOut1[0][0][0],
-                               pointsOut1[0][0][1]),
-                               2,
-                               linewidth=2,
-                               edgecolor='r',
-                               facecolor='none')
+                                    bbox = patches.Circle(
+                                               (pointsOut1[0][0][0],
+                                               pointsOut1[0][0][1]),
+                                               2,
+                                               linewidth=2,
+                                               edgecolor='r',
+                                               facecolor='none')
 
-                    ax.add_patch(bbox)
-            frame_count += 1
-            k = cv2.waitKey(1)
-            if k == ord('q'):
-                break
+                                    ax.add_patch(bbox)
+                            frame_list[frame_no] = draw_boxes(frame_list[frame_no],
+                                                                   frame_coords)
+                        previous_frame_coordiantes = current_coords_list
+                    frame_list[0] = out_frame
+
+                    frame_count += 1
+                    current_time = time.time()
+                    time_elapsed = current_time - prev_time1
+                    frame_left_read = total_frame - no_frame_read
+                    eta = frame_left_read * time_elapsed
+                    no_frame_read += frames_skipped
+                    pbar.update(frames_skipped)
+                    k = cv2.waitKey(1)
+                    if k == ord('q'):
+                        break
+
+
+                else:   #  For all the other frames that we have skipped
+                    frame_list[count_of_frames % frames_skipped] = frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
+                
+                count_of_frames+=1
+
+        # If No optimization
+        else: 
+            print("\nOptimization is False")
+            frames_skipped=1
+            print("detect_players_image is run in the video every",frames_skipped, "frames\n")
+
+            no_frame_read = 1
+
+            while(1):
+                #reading the video frame by frame
+                ret, frame = cap.read()
+                prev_time1 = time.time()
+                if not ret:
+                    break
+                # For the first frame, take the 4 court co-ordinates input
+
+                if frame_count == 0:
+                    image = frame
+                    get_court_coordinates(image)
+                    print('Position is: ', positions)
+                    if len(positions) < 4:
+                        print("Error!!! Select the 4 coordinates of the court correctly")
+                    # These are points of court selected by user
+                    pts1 = np.float32(positions)
+                    # Size of 2D image we want to generate
+
+                    pts2 = np.float32([[0, 0],
+                                       [1080, 0],
+                                       [0, 1920],
+                                       [1080, 1920]])
+                    matrix, status = cv2.findHomography(pts1, pts2)
+                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
+                    result = PIL_to_OpenCV(result)
+                    template = heatmap_template(result)
+                    plt.figure()
+                    fig, ax = plt.subplots(1, figsize=(12, 9))
+                    ax.imshow(template)
+                    print(frame_count)
+                    prev_time2 = time.time()
+
+                (h, w) = frame.shape[:2]
+                out_frame, all_coordinates = self.detect_players_image(
+                                                 frame,
+                                                 ret_img=1,
+                                                 display_detection=False)
+                centerbottom = get_center_bottom(all_coordinates)
+
+                if len(centerbottom) != 0:
+                    for i in range(0, len(centerbottom), 2):
+
+                        a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                        a = np.array([a])
+
+                        # Position of player after Perspective transformation
+                        pointsOut1 = cv2.perspectiveTransform(a,matrix)
+
+
+                        bbox = patches.Circle(
+                                   (pointsOut1[0][0][0],
+                                   pointsOut1[0][0][1]),
+                                   2,
+                                   linewidth=2,
+                                   edgecolor='r',
+                                   facecolor='none')
+
+                        ax.add_patch(bbox)
+                frame_count += 1
+                current_time = time.time()
+                time_elapsed = current_time - prev_time1
+
+                frame_left_read = total_frame - no_frame_read
+                eta = frame_left_read * time_elapsed
+                if(no_frame_read == 1):
+                    pbar=tqdm(total = total_frame)
+                no_frame_read += 1
+                pbar.update(1)
+                k = cv2.waitKey(1)
+                if k == ord('q'):
+                    break
         cap.release()
         print("Time taken is:" + str(time.time() - prev_time2))
 
