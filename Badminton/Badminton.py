@@ -21,7 +21,6 @@ from Badminton.utilities.parse_config import *
 from Badminton.utilities.models import *
 
 
-
 class Detector:
     def __init__(self,
                  config_folder="Badminton/config",
@@ -33,6 +32,7 @@ class Detector:
                  nms_thres=0.4,
                  tiny=False,
                  Windows=False):
+
         self.config_path = config_path
         self.weights_path = weights_path
         self.class_path = class_path
@@ -51,8 +51,7 @@ class Detector:
         self.img = img
 
         # scale and pad image
-        ratio = min(self.img_size/self.img.size[0],
-                    self.img_size/self.img.size[1])
+        ratio = min(self.img_size/self.img.size[0], self.img_size/self.img.size[1])
         imw = round(self.img.size[0] * ratio)
         imh = round(self.img.size[1] * ratio)
         img_transforms = transforms.Compose([
@@ -177,8 +176,18 @@ class Detector:
                     label = classes[int(cls_pred)]
                     bbox_colors = random.sample(colors, n_cls_preds)
                     color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
-                    cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2)  # purple bbox
+                    cv2.putText(img=out_img,
+                                text=label,
+                                org=(x1, y1 - 10),
+                                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                fontScale=0.5,
+                                color=(255,255,255),
+                                thickness=2)
+                    cv2.rectangle(out_img,
+                                 (x1, y1),
+                                 (x1 + box_w, y1 + box_h),
+                                 (128,0,128),
+                                 2)  # purple bbox
 
         else:
             pass
@@ -204,10 +213,38 @@ class Detector:
             return out_img, coordinate
 
     def draw_boxes(self, frame_to_draw, coord_list_inp):
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
+        cv2.putText(img=frame_to_draw,
+                    text="person",
+                    org=(coord_list_inp[0],
+                    coord_list_inp[1] - 10),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.5,
+                    color=(255,255,255),
+                    thickness=2)
+        cv2.rectangle(frame_to_draw,
+                      (coord_list_inp[0],
+                      coord_list_inp[1]),
+                      (coord_list_inp[0] + coord_list_inp[2],
+                      coord_list_inp[1] + coord_list_inp[3]),
+                      (128,0,128),
+                      2) #purple bbox
+        cv2.putText(img=frame_to_draw,
+                    text="person",
+                    org=(coord_list_inp[4],
+                    coord_list_inp[5] - 10),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.5,
+                    color=(255,255,255),
+                    thickness=2)
+        cv2.rectangle(frame_to_draw,
+                     (coord_list_inp[4],
+                     coord_list_inp[5]),
+                     (coord_list_inp[4]
+                     + coord_list_inp[6],
+                     coord_list_inp[5]
+                     + coord_list_inp[7]),
+                     (128,0,128),
+                     2) #purple bbox
         return frame_to_draw
 
     def calculate_step(self, prev_coords, current_coords, num_frames_skipped):
@@ -226,8 +263,14 @@ class Detector:
         if len(current_coords)!= 8:
             # find which player  is not detected
             if len(current_coords) == 4:
-                diff_player1 = abs(current_coords[0] - prev_coords[0]) + abs(current_coords[1] - prev_coords[1])
-                diff_player2 = abs(current_coords[0] - prev_coords[4]) + abs(current_coords[1] - prev_coords[5])
+                diff_player1 = abs(current_coords[0]
+                                   - prev_coords[0])
+                                   + abs(current_coords[1]
+                                   - prev_coords[1])
+                diff_player2 = abs(current_coords[0]
+                                   - prev_coords[4])
+                                   + abs(current_coords[1]
+                                   - prev_coords[5])
                 if diff_player2 > diff_player1:
                     new_current_coords=[current_coords[0],
                                         current_coords[1],
@@ -281,7 +324,7 @@ class Detector:
                 if frames_skipped == 1:
                     # if user has not put an input frames skipped
                     frames_skipped = 5
-            print("detect_players_image is run in the video every ", frames_skipped}," frames")
+            print("detect_players_image is run in the video every ", frames_skipped," frames")
             no_frame_read = 1
             while(1):
                 # reading the video frame by frame
@@ -291,7 +334,9 @@ class Detector:
                     break
                 (h, w) = frame.shape[:2]
                 if count_of_frames % frames_skipped == 0:
-                    out_frame, all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                    out_frame, all_coordinates = self.detect_players_image(frame,
+                                                                           ret_img=1,
+                                                                           display_detection=False)
                     if count_of_frames == 0: # for first frame
                         frame_list = [] # initialize n frame list
                         for f in range(frames_skipped):
@@ -305,11 +350,17 @@ class Detector:
                         previous_frame_coordiantes = all_coordinates
                     else:
                         #for every frame read thereafter
-                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
-                        step_list = self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
+                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes,
+                                                                                 all_coordinates)
+                        step_list = self.calculate_step(previous_frame_coordiantes,
+                                                        current_coords_list,
+                                                        frames_skipped)
                         for frame_no in range(1, frames_skipped):
-                            frame_coords = self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
-                            frame_list[frame_no] = self.draw_boxes(frame_list[frame_no], frame_coords)
+                            frame_coords = self.get_frame_coords(previous_frame_coordiantes,
+                                                                 step_list,
+                                                                 frame_no)
+                            frame_list[frame_no] = self.draw_boxes(frame_list[frame_no],
+                                                                   frame_coords)
                             out_video.append(frame_list[frame_no])
                         previous_frame_coordiantes = current_coords_list
                     out_video.append(out_frame)
@@ -339,7 +390,9 @@ class Detector:
                     break
 
                 (h, w) = frame.shape[:2]
-                out_frame,all_coordinates = self.detect_players_image(frame, ret_img=1, display_detection=False)
+                out_frame,all_coordinates = self.detect_players_image(frame,
+                                                                      ret_img=1,
+                                                                      display_detection=False)
                 centerbottom = get_center_bottom(all_coordinates)
                 out_video.append(out_frame)
                 current_time = time.time()
@@ -390,7 +443,10 @@ class Detector:
                 pts1 = np.float32(positions)
                 # Size of 2D image we want to generate
 
-                pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
+                pts2 = np.float32([[0, 0],
+                                   [1080, 0],
+                                   [0, 1920],
+                                   [1080, 1920]])
                 matrix, status = cv2.findHomography(pts1, pts2)
                 result = cv2.warpPerspective(image, matrix, (1080, 1920))
                 result = PIL_to_OpenCV(result)
