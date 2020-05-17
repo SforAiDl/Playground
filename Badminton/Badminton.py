@@ -337,68 +337,179 @@ class Detector:
         out.release()
         cv2.destroyAllWindows()
 
-    def get_heatmap(self, video_path):
+    def get_heatmap(self, video_path, optimization=False, frames_skipped_input=1):
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
 
         count=0
+        if optimization==True:
+            frames_skipped=frames_skipped_input
+        else:
+            frames_skipped=1
+        if optimization==True:
+            pbar=tqdm(total=180)
+            frame_count=0
+            print("Optimization is True")
+            if self.tiny==True :
+                print("tiny is True")
+                if frames_skipped==1: #if user has not put an input frames skipped
+                    frames_skipped=3
+            else:
+                print("tiny is False")
+                if frames_skipped==1:#if user has not put an input frames skipped
+                    frames_skipped=5
+            print("detect_players_image is run in the video every ",frames_skipped, " frames")
+            no_frame_read = 1
+            frame_count = 0
+            count=0
 
-        while(1):
-            #reading the video frame by frame
-            ret,frame = cap.read()
-            if not ret:
-                break
-            # For the first frame, take the 4 court co-ordinates input
+            while(1):
+                #reading the video frame by frame
+                ret,frame = cap.read()
+                if not ret:
+                    break
+                # For the first frame, take the 4 court co-ordinates input
 
-            if frame_count == 0:
-                image = frame
-                get_court_coordinates(image)
-                print('Position is: ', positions)
-                if len(positions) < 4:
-                    print("Error!!! Select the 4 coordinates of the court correctly")
-                # These are points of court selected by user
-                pts1 = np.float32(positions)
-                # Size of 2D image we want to generate
+                if frame_count == 0:
+                    image = frame
+                    get_court_coordinates(image)
+                    print('Position is: ', positions)
+                    if len(positions) < 4:
+                        print("Error!!! Select the 4 coordinates of the court correctly")
+                    # These are points of court selected by user
+                    pts1 = np.float32(positions)
+                    # Size of 2D image we want to generate
 
-                pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
-                matrix, status = cv2.findHomography(pts1, pts2)
-                result = cv2.warpPerspective(image, matrix, (1080, 1920))
-                result = PIL_to_OpenCV(result)
+                    pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
+                    matrix, status = cv2.findHomography(pts1, pts2)
+                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
+                    result = PIL_to_OpenCV(result)
 
-                plt.figure()
-                fig, ax = plt.subplots(1, figsize=(12, 9))
-                ax.imshow(result)
-                print(frame_count)
-                prev_time2 = time.time()
+                    plt.figure()
+                    fig, ax = plt.subplots(1, figsize=(12, 9))
+                    ax.imshow(result)
+                    print(frame_count)
+                    prev_time2 = time.time()
+                (h, w) = frame.shape[:2]
+                
+                if frame_count%frames_skipped == 0:
+                    out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
 
-            (h, w) = frame.shape[:2]
-            out_frame, all_coordinates = self.detect_players_image(
-                frame, ret_img=1, display_detection=False)
-            centerbottom = get_center_bottom(all_coordinates)
+                    if frame_count==0: #for first frame
+                        frame_list=[] #initialize n frame list
+                        for f in range(frames_skipped):
+                            frame_list.append(frame)
+                        if len(all_coordinates)!=8: 
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                            all_coordinates.append(10)
+                        previous_frame_coordiantes=all_coordinates
+                    else: #for every frame read thereafter
+                        current_coords_list=self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
+                        step_list=self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
+                        for frame_no in range(1, frames_skipped):
+                            frame_coords=self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
+                            centerbottom = get_center_bottom(frame_coords)
+                            if len(centerbottom) != 0:
+                                for i in range(0, len(centerbottom), 2):
 
-            if len(centerbottom) != 0:
-                for i in range(0, len(centerbottom), 2):
+                                    a = np.array(
+                                        [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                                    a = np.array([a])
 
-                    a = np.array(
-                        [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                    a = np.array([a])
-
-                    # Position of player after Perspective transformation
-                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
+                                    # Position of player after Perspective transformation
+                                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-                    bbox = patches.Rectangle(
-                        (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
-                    ax.add_patch(bbox)
-            frame_count += 1
-            k = cv2.waitKey(1)
-            if k == ord('q'):
-                break
-        cap.release()
-        print("Time taken is:" + str(time.time() - prev_time2))
+                                    bbox = patches.Rectangle(
+                                        (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                                    ax.add_patch(bbox)
+                                previous_frame_coordiantes=current_coords_list
+                else:
+                    frame_list[frame_count%frames_skipped]=frame
+                frame_count=frame_count+1
+                pbar.update(1)
 
-        cv2.destroyAllWindows()
-        plt.savefig('./Badminton/images/heatmap.png', bbox_inches='tight')
-        plt.show()
+
+                
+                k = cv2.waitKey(1)
+                if k == ord('q'):
+                    break
+            cap.release()
+            pbar.close()
+            print("Time taken is:" + str(time.time() - prev_time2))
+            
+            cv2.destroyAllWindows()
+            plt.savefig('./Badminton/images/heatmap.png', bbox_inches='tight')
+            plt.show()
+        else:
+            cap = cv2.VideoCapture(video_path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = 0
+            pbar=tqdm(total=180)
+            count=0
+
+            while(1):
+                #reading the video frame by frame
+                ret,frame = cap.read()
+                if not ret:
+                    break
+                # For the first frame, take the 4 court co-ordinates input
+
+                if frame_count == 0:
+                    image = frame
+                    get_court_coordinates(image)
+                    print('Position is: ', positions)
+                    if len(positions) < 4:
+                        print("Error!!! Select the 4 coordinates of the court correctly")
+                    # These are points of court selected by user
+                    pts1 = np.float32(positions)
+                    # Size of 2D image we want to generate
+
+                    pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
+                    matrix, status = cv2.findHomography(pts1, pts2)
+                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
+                    result = PIL_to_OpenCV(result)
+
+                    plt.figure()
+                    fig, ax = plt.subplots(1, figsize=(12, 9))
+                    ax.imshow(result)
+                    print(frame_count)
+                    prev_time2 = time.time()
+
+                (h, w) = frame.shape[:2]
+                out_frame, all_coordinates = self.detect_players_image(
+                    frame, ret_img=1, display_detection=False)
+                centerbottom = get_center_bottom(all_coordinates)
+
+                if len(centerbottom) != 0:
+                    for i in range(0, len(centerbottom), 2):
+
+                        a = np.array(
+                            [[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+                        a = np.array([a])
+
+                        # Position of player after Perspective transformation
+                        pointsOut1 = cv2.perspectiveTransform(a,matrix)
+
+
+                        bbox = patches.Rectangle(
+                            (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
+                        ax.add_patch(bbox)
+                frame_count += 1
+                pbar.update(1)
+                k = cv2.waitKey(1)
+                if k == ord('q'):
+                    break
+            cap.release()
+            pbar.close()
+            print("Time taken is:" + str(time.time() - prev_time2))
+            
+
+            cv2.destroyAllWindows()
+            plt.savefig('./Badminton/images/heatmap.png', bbox_inches='tight')
+            plt.show()
+
