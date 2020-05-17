@@ -187,41 +187,6 @@ class Detector:
         else :
             return out_img,coordinate
 
-    def draw_boxes(self, frame_to_draw, coord_list_inp):
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
-        return frame_to_draw
-
-    def calculate_step(self, prev_coords, current_coords, num_frames_skipped):
-        step=[0,0,0,0,0,0,0,0]
-        for i in range(len(prev_coords)):
-            step[i]=(current_coords[i]- prev_coords[i])/num_frames_skipped
-        return step
-
-    def get_frame_coords(self, coords, step, no_of_steps):
-        new_coords=[0,0,0,0,0,0,0,0]
-        for i in range(len(coords)):
-            new_coords[i]=int(coords[i]+(step[i]*no_of_steps))
-        return new_coords
-
-    def check_if_two_players_detected(self, prev_coords, current_coords):
-        if len(current_coords)!= 8:
-            # find which player  is not detected
-            if len(current_coords)==4:
-                diff_player1=abs(current_coords[0]-prev_coords[0])+abs(current_coords[1]-prev_coords[1])
-                diff_player2=abs(current_coords[0]-prev_coords[4])+abs(current_coords[1]-prev_coords[5])
-                if diff_player2 > diff_player1:
-                    new_current_coords=[current_coords[0], current_coords[1], current_coords[2], current_coords[3], prev_coords[4],prev_coords[5], prev_coords[6], prev_coords[7]]
-                else:
-                    new_current_coords=[prev_coords[0], prev_coords[1], prev_coords[2], prev_coords[3], current_coords[0],current_coords[1], current_coords[2], current_coords[3]]
-            else:
-                new_current_coords=prev_coords
-        else:
-            new_current_coords=current_coords
-        return new_current_coords
-
     def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
 
 
@@ -275,11 +240,11 @@ class Detector:
                             all_coordinates.append(10)
                         previous_frame_coordiantes=all_coordinates
                     else: #for every frame read thereafter
-                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
-                        step_list=self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
+                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
+                        step_list=calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
                         for frame_no in range(1, frames_skipped):
-                            frame_coords=self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
-                            frame_list[frame_no]=self.draw_boxes(frame_list[frame_no], frame_coords)
+                            frame_coords=get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
+                            frame_list[frame_no]=draw_boxes(frame_list[frame_no], frame_coords)
                             out_video.append(frame_list[frame_no])
                         previous_frame_coordiantes=current_coords_list
                     out_video.append(out_frame)
