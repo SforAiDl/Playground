@@ -1,3 +1,4 @@
 from Badminton.Badminton import Detector
+
 obj = Detector(tiny=True)
-obj.detect_players_video("Badminton/images/video.mp4")
+obj.get_heatmap("Badminton/images/video2.mp4")
