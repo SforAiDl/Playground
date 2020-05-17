@@ -187,68 +187,32 @@ class Detector:
         else :
             return out_img,coordinate
 
-    def draw_boxes(self, frame_to_draw, coord_list_inp):
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[0], coord_list_inp[1] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[0], coord_list_inp[1]), (coord_list_inp[0] + coord_list_inp[2], coord_list_inp[1] + coord_list_inp[3]),(128,0,128), 2) #purple bbox
-        cv2.putText(img=frame_to_draw, text="person", org=(coord_list_inp[4], coord_list_inp[5] - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-        cv2.rectangle(frame_to_draw, (coord_list_inp[4], coord_list_inp[5]), (coord_list_inp[4] + coord_list_inp[6], coord_list_inp[5] + coord_list_inp[7]),(128,0,128), 2) #purple bbox
-        return frame_to_draw
-
-    def calculate_step(self, prev_coords, current_coords, num_frames_skipped):
-        step=[0,0,0,0,0,0,0,0]
-        for i in range(len(prev_coords)):
-            step[i]=(current_coords[i]- prev_coords[i])/num_frames_skipped
-        return step
-
-    def get_frame_coords(self, coords, step, no_of_steps):
-        new_coords=[0,0,0,0,0,0,0,0]
-        for i in range(len(coords)):
-            new_coords[i]=int(coords[i]+(step[i]*no_of_steps))
-        return new_coords
-
-    def check_if_two_players_detected(self, prev_coords, current_coords):
-        if len(current_coords)!= 8:
-            # find which player  is not detected
-            if len(current_coords)==4:
-                diff_player1=abs(current_coords[0]-prev_coords[0])+abs(current_coords[1]-prev_coords[1])
-                diff_player2=abs(current_coords[0]-prev_coords[4])+abs(current_coords[1]-prev_coords[5])
-                if diff_player2 > diff_player1:
-                    new_current_coords=[current_coords[0], current_coords[1], current_coords[2], current_coords[3], prev_coords[4],prev_coords[5], prev_coords[6], prev_coords[7]]
-                else:
-                    new_current_coords=[prev_coords[0], prev_coords[1], prev_coords[2], prev_coords[3], current_coords[0],current_coords[1], current_coords[2], current_coords[3]]
-            else:
-                new_current_coords=prev_coords
-        else:
-            new_current_coords=current_coords
-        return new_current_coords
+    
 
     def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
 
+        #   The variable optimization indicates whether we are using the optimized version or not
+        #   The variable frames_skipped_input inicates the number of frames we intend to skip if we choose to use the optimised version
 
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
-
+            
         if optimization:
-            frames_skipped=frames_skipped_input
-        else:
-            frames_skipped=1
-        if optimization:
-
+            frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
             count_of_frames=0
-            print("Optimization is True")
+            print("\nOptimization is True")
             if self.tiny:
                 print("tiny is True")
                 if frames_skipped == 1: # if user has not put an input frames skipped
-                    frames_skipped=3
+                    frames_skipped=3    # 3 is the default when tiny is True
             else:
                 print("tiny is False")
-                if frames_skipped == 1:
-                    # if user has not put an input frames skipped
-                    frames_skipped=5
-            print("detect_players_image is run in the video every ",frames_skipped, " frames")
+                if frames_skipped == 1: # if user has not put an input frames skipped
+                    frames_skipped=5    # 5 is the default when tiny is False
+            print("detect_players_image is run in the video every",frames_skipped,"frames\n")
             no_frame_read = 1
             while(1):
                 #reading the video frame by frame
@@ -257,14 +221,21 @@ class Detector:
 
                 if not ret:
                     break
+                
                 (h, w) = frame.shape[:2]
+                
+                #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
+                #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
+
                 if count_of_frames % frames_skipped == 0:
                     out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                    #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
 
-                    if(no_frame_read==1):
+                    if(no_frame_read==1):   #   This snippet is for the progress bar
                         pbar=tqdm(total=total_frame)
-                    if count_of_frames==0: #for first frame
-                        frame_list=[] #initialize n frame list
+                    
+                    if count_of_frames==0: #for the first frame
+                        frame_list=[] #initialize a frame list (size will be frames_skipped)
                         for f in range(frames_skipped):
                             frame_list.append(frame)
                         #ensure first frame detects 2 players-->
@@ -273,17 +244,24 @@ class Detector:
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
+                        
                         previous_frame_coordiantes=all_coordinates
+                    
                     else: #for every frame read thereafter
-                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)
-                        step_list=self.calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)
+                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)    #  This just ensures that we detect both the players in the frame
+                        
+                        step_list=calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)   #  returns the step sizes for every edge of the boxes
+                        
                         for frame_no in range(1, frames_skipped):
-                            frame_coords=self.get_frame_coords(previous_frame_coordiantes, step_list, frame_no)
-                            frame_list[frame_no]=self.draw_boxes(frame_list[frame_no], frame_coords)
+                            frame_coords=get_frame_coords(previous_frame_coordiantes, step_list, frame_no)      #  based on the step list, this will return the cooridnates of the frames in between
+                            frame_list[frame_no]=draw_boxes(frame_list[frame_no], frame_coords)     #   draws boxes based on the frame based on the coordinates of the boxes obtained 
                             out_video.append(frame_list[frame_no])
+                        
                         previous_frame_coordiantes=current_coords_list
+                    
                     out_video.append(out_frame)
                     frame_list[0]=out_frame
+                    
                     current_time = time.time()
                     time_elapsed = current_time - prev_time1
                     frame_left_read = total_frame-no_frame_read
@@ -294,12 +272,15 @@ class Detector:
                     if k == ord('q'):
                         break
 
-                else:
-                    frame_list[count_of_frames%frames_skipped]=frame
-                count_of_frames=count_of_frames+1
-        else:
-            print("Optimization is False")
-            print("detect_players_image is run in the video every ",frames_skipped, " frames")
+                else:   #  For all the other frames that we have skipped
+                    frame_list[count_of_frames%frames_skipped]=frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
+                
+                count_of_frames+=1
+        
+        else:   #   IF NO OPTIMIZATION
+            print("\nOptimization is False")
+            frames_skipped=1
+            print("detect_players_image is run in the video every",frames_skipped, "frames\n")
             no_frame_read = 1
             while(1):
                 #reading the video frame by frame
