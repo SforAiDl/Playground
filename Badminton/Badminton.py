@@ -1,28 +1,38 @@
+import datetime
+import os
+import random
+import sys
+import subprocess
+import time
+
+import torch
+import cv2
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+from torch.autograd import Variable
+from tqdm import tqdm
+from PIL import Image
+
 from Badminton.utilities.utils import *
 from Badminton.utilities.datasets import *
 from Badminton.utilities.parse_config import *
 from Badminton.utilities.models import *
 
-import os
-import sys
-import time
-import datetime
-import random
-import subprocess
-import torch
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-from tqdm import tqdm
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from PIL import Image
-import cv2
-
 
 class Detector:
-    def __init__(self, config_folder="Badminton/config", config_path='Badminton/config/yolov3.cfg', weights_path='Badminton/config/yolov3.weights', class_path='Badminton/config/coco.names', img_size=416, conf_thres=0.8, nms_thres=0.4, tiny=False, Windows=False):
+    def __init__(self,
+                 config_folder="Badminton/config",
+                 config_path='Badminton/config/yolov3.cfg',
+                 weights_path='Badminton/config/yolov3.weights',
+                 class_path='Badminton/config/coco.names',
+                 img_size=416,
+                 conf_thres=0.8,
+                 nms_thres=0.4,
+                 tiny=False,
+                 Windows=False):
+
         self.config_path = config_path
         self.weights_path = weights_path
         self.class_path = class_path
@@ -44,11 +54,14 @@ class Detector:
         ratio = min(self.img_size/self.img.size[0], self.img_size/self.img.size[1])
         imw = round(self.img.size[0] * ratio)
         imh = round(self.img.size[1] * ratio)
-        img_transforms = transforms.Compose([ transforms.Resize((imh, imw)),
-            transforms.Pad((max(int((imh-imw)/2),0), max(int((imw-imh)/2),0), max(int((imh-imw)/2),0), max(int((imw-imh)/2),0)),
-                            (128,128,128)),
-                    transforms.ToTensor(),
-             ])
+        img_transforms = transforms.Compose([
+            transforms.Resize((imh, imw)),
+            transforms.Pad((max(int((imh-imw)/2), 0),
+                            max(int((imw-imh)/2), 0),
+                            max(int((imh-imw)/2), 0),
+                            max(int((imw-imh)/2), 0)),
+                            (128, 128, 128)),
+                            transforms.ToTensor()])
         # convert image to Tensor
         image_tensor = img_transforms(self.img).float()
         image_tensor = image_tensor.unsqueeze_(0)
@@ -76,7 +89,11 @@ class Detector:
         names = fp.read().split("\n")[:-1]
         return names
 
-    def detect_players_image(self, img_src, display_detection=True, save_detection=False, ret_img=False):
+    def detect_players_image(self,
+                             img_src,
+                             display_detection=True,
+                             save_detection=False,
+                             ret_img=False):
 
         if self.tiny:
             self.weights_path = 'Badminton/config/yolov3-tiny.weights'
@@ -161,11 +178,23 @@ class Detector:
                     label = classes[int(cls_pred)]
                     bbox_colors = random.sample(colors, n_cls_preds)
                     color = tuple([255*x for x in bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]])
-                    cv2.putText(img=out_img, text=label, org=(x1, y1 - 10),fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255,255,255), thickness=2)
-                    cv2.rectangle(out_img, (x1, y1), (x1 + box_w, y1 + box_h),(128,0,128), 2) #purple bbox
+                    cv2.putText(img=out_img,
+                                text=label,
+                                org=(x1, y1 - 10),
+                                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                fontScale=0.5,
+                                color=(255,255,255),
+                                thickness=2)
+                    cv2.rectangle(out_img,
+                                 (x1, y1),
+                                 (x1 + box_w, y1 + box_h),
+                                 (128,0,128),
+                                 2)  # purple bbox
 
         else:
-        	pass
+            pass
+
+
 
         if display_detection:
         	cv2.imshow('Final ouput', out_img)
@@ -182,19 +211,21 @@ class Detector:
                 cv2.imwrite(os.getcwd()+"/output.jpg",cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
 
 
-        if not ret_img :
+        if not ret_img:
             return None,None
-        else :
-            return out_img,coordinate
+        else:
+            return out_img, coordinate
 
-    def detect_players_video(self, video_path, optimization=False, frames_skipped_input=1):
 
-        #   The variable optimization indicates whether we are using the optimized version or not
-        #   The variable frames_skipped_input inicates the number of frames we intend to skip if we choose to use the optimised version
 
+    def detect_players_video(self,
+                             video_path,
+                             optimization=False,
+                             frames_skipped_input=1):
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
             
@@ -213,20 +244,23 @@ class Detector:
             print("detect_players_image is run in the video every",frames_skipped,"frames\n")
             no_frame_read = 1
             while(1):
-                #reading the video frame by frame
+                # reading the video frame by frame
                 ret,frame = cap.read()
-                prev_time1=time.time()
+                prev_time1 = time.time()
 
                 if not ret:
                     break
                 
                 (h, w) = frame.shape[:2]
+
                 
                 #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
                 #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
 
                 if count_of_frames % frames_skipped == 0:
-                    out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                    out_frame, all_coordinates = self.detect_players_image(frame,
+                                                                           ret_img=1,
+                                                                           display_detection=False)
                     #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
 
                     if(no_frame_read==1):   #   This snippet is for the progress bar
@@ -242,37 +276,38 @@ class Detector:
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                             all_coordinates.append(10)
-                        
-                        previous_frame_coordiantes=all_coordinates
-                    
-                    else: #for every frame read thereafter
-                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes, all_coordinates)    #  This just ensures that we detect both the players in the frame
-                        
-                        step_list=calculate_step(previous_frame_coordiantes, current_coords_list, frames_skipped)   #  returns the step sizes for every edge of the boxes
-                        
+                        previous_frame_coordiantes = all_coordinates
+                    else:
+                        #for every frame read thereafter
+                        current_coords_list = self.check_if_two_players_detected(previous_frame_coordiantes,
+                                                                                 all_coordinates)
+                        step_list = self.calculate_step(previous_frame_coordiantes,
+                                                        current_coords_list,
+                                                        frames_skipped)
                         for frame_no in range(1, frames_skipped):
-                            frame_coords=get_frame_coords(previous_frame_coordiantes, step_list, frame_no)      #  based on the step list, this will return the cooridnates of the frames in between
-                            frame_list[frame_no]=draw_boxes(frame_list[frame_no], frame_coords)     #   draws boxes based on the frame based on the coordinates of the boxes obtained 
-
+                            frame_coords = self.get_frame_coords(previous_frame_coordiantes,
+                                                                 step_list,
+                                                                 frame_no)
+                            frame_list[frame_no] = self.draw_boxes(frame_list[frame_no],
+                                                                   frame_coords)
                             out_video.append(frame_list[frame_no])
-                        
-                        previous_frame_coordiantes=current_coords_list
-                    
+                        previous_frame_coordiantes = current_coords_list
                     out_video.append(out_frame)
-                    frame_list[0]=out_frame
-                    
+                    frame_list[0] = out_frame
+
                     current_time = time.time()
                     time_elapsed = current_time - prev_time1
-                    frame_left_read = total_frame-no_frame_read
-                    eta = frame_left_read*time_elapsed
+                    frame_left_read = total_frame - no_frame_read
+                    eta = frame_left_read * time_elapsed
                     no_frame_read += frames_skipped
                     pbar.update(frames_skipped)
                     k = cv2.waitKey(1)
                     if k == ord('q'):
                         break
 
+
                 else:   #  For all the other frames that we have skipped
-                    frame_list[count_of_frames%frames_skipped]=frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
+                    frame_list[count_of_frames % frames_skipped] = frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
                 
                 count_of_frames+=1
         
@@ -280,24 +315,29 @@ class Detector:
             print("\nOptimization is False")
             frames_skipped=1
             print("detect_players_image is run in the video every",frames_skipped, "frames\n")
+
             no_frame_read = 1
             while(1):
                 #reading the video frame by frame
                 ret,frame = cap.read()
-                prev_time1=time.time()
+                prev_time1 = time.time()
+
                 if not ret:
                     break
 
                 (h, w) = frame.shape[:2]
-                out_frame,all_coordinates = self.detect_players_image(frame,ret_img=1,display_detection=False)
+                out_frame,all_coordinates = self.detect_players_image(frame,
+                                                                      ret_img=1,
+                                                                      display_detection=False)
                 centerbottom = get_center_bottom(all_coordinates)
                 out_video.append(out_frame)
                 current_time = time.time()
                 time_elapsed = current_time - prev_time1
-                frame_left_read = total_frame-no_frame_read
-                eta = frame_left_read*time_elapsed
-                if(no_frame_read==1):
-                    pbar=tqdm(total=total_frame)
+
+                frame_left_read = total_frame - no_frame_read
+                eta = frame_left_read * time_elapsed
+                if(no_frame_read == 1):
+                    pbar=tqdm(total = total_frame)
                 no_frame_read += 1
                 pbar.update(1)
                 k = cv2.waitKey(1)
@@ -308,10 +348,10 @@ class Detector:
         pbar.close()
         print("Time taken is:" + str(time.time() - prev_time2))
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        out = cv2.VideoWriter(video_path.replace(
-            ".mp4", "-out.mp4"), fourcc, fps, (w, h))
+        out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"), fourcc, fps, (w, h))
+
         for i in range(len(out_video)):
-            out.write(out_video [i])
+            out.write(out_video[i])
         print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
 
         out.release()
@@ -323,11 +363,12 @@ class Detector:
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
 
-        count=0
+        count = 0
+
 
         while(1):
             #reading the video frame by frame
-            ret,frame = cap.read()
+            ret, frame = cap.read()
             if not ret:
                 break
             # For the first frame, take the 4 court co-ordinates input
@@ -342,7 +383,10 @@ class Detector:
                 pts1 = np.float32(positions)
                 # Size of 2D image we want to generate
 
-                pts2 = np.float32([[0, 0], [1080, 0], [0, 1920], [1080, 1920]])
+                pts2 = np.float32([[0, 0],
+                                   [1080, 0],
+                                   [0, 1920],
+                                   [1080, 1920]])
                 matrix, status = cv2.findHomography(pts1, pts2)
                 result = cv2.warpPerspective(image, matrix, (1080, 1920))
                 result = PIL_to_OpenCV(result)
@@ -355,7 +399,9 @@ class Detector:
 
             (h, w) = frame.shape[:2]
             out_frame, all_coordinates = self.detect_players_image(
-                frame, ret_img=1, display_detection=False)
+                                             frame,
+                                             ret_img=1,
+                                             display_detection=False)
             centerbottom = get_center_bottom(all_coordinates)
 
             if len(centerbottom) != 0:
@@ -368,10 +414,14 @@ class Detector:
                     pointsOut1 = cv2.perspectiveTransform(a,matrix)
 
 
-                    #bbox = patches.Rectangle(
-                    #    (pointsOut1[0][0][0], pointsOut1[0][0][1]), 3, 3, linewidth=2, edgecolor='r', facecolor='none')
                     bbox = patches.Circle(
-                        (pointsOut1[0][0][0], pointsOut1[0][0][1]),2, linewidth=2, edgecolor='b', facecolor='none')
+                               (pointsOut1[0][0][0],
+                               pointsOut1[0][0][1]),
+                               2,
+                               linewidth=2,
+                               edgecolor='r',
+                               facecolor='none')
+
                     ax.add_patch(bbox)
             frame_count += 1
             k = cv2.waitKey(1)
