@@ -265,7 +265,7 @@ class Detector:
                         pbar=tqdm(total=total_frame)
                     if count_of_frames==0: #for first frame
 
-                      frame_list=[] #initialize n frame list
+                        frame_list=[] #initialize n frame list
                         for f in range(frames_skipped):
                             frame_list.append(frame)
                         #ensure first frame detects 2 players-->
