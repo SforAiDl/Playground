@@ -12,6 +12,35 @@ positions=[]
 positions2=[]
 count =0 
 
+def heatmap_template(result):
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY) 
+    bw = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 19, -5)
+    horizontal = np.copy(bw)
+    vertical = np.copy(bw)
+    #Horizontal morphology
+    cols = horizontal.shape[1]
+    horizontal_size = cols // 3
+    horizontalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
+    horizontal=cv2.morphologyEx(horizontal,cv2.MORPH_OPEN,horizontalStructure,iterations=1)
+    horizontal = cv2.dilate(horizontal,horizontalStructure,iterations=5)
+    #Vertical morphology
+    rows = vertical.shape[0]
+    verticalsize = rows // 5
+    verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, verticalsize))
+    vertical=cv2.morphologyEx(vertical,cv2.MORPH_OPEN,verticalStructure,iterations=1)
+    vertical = cv2.dilate(vertical,verticalStructure,iterations=2)
+
+    final = vertical+horizontal
+    final[(final.shape[0]//2)-5:(final.shape[0]//2)+5,:]=255 #middle net line
+    
+    green = np.zeros((result.shape), np.uint8)
+    green[:,:,:] = (np.mean(result[:,:,0]),np.mean(result[:,:,1]),np.mean(result[:,:,2]))
+    final_inv = cv2.bitwise_not(final)
+    template = cv2.bitwise_and(~green,~green,mask = final_inv)
+    
+    return ~template
+
+
 def draw_circle(event, x, y, flags, image):
 
     global positions,count
@@ -32,7 +61,7 @@ def get_court_coordinates(image):
     print("\n##########################################################\n")
     print("Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape")
     print("\n##########################################################\n")
-    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape')
+    cv2.namedWindow('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape',cv2.WINDOW_NORMAL)
     cv2.setMouseCallback('Select 4 corners in Top Left, Top Right, Bottom Left & Bottom Right in order and then press escape', draw_circle,image)
                
     while True:
