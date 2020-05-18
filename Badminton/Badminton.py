@@ -595,6 +595,7 @@ class Detector:
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
+        pbar.close()
         cap.release()
         print("Time taken is:" + str(time.time() - prev_time2))
 
