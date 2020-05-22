@@ -393,23 +393,7 @@ class Detector:
                 # For the first frame, take the 4 court co-ordinates input
 
                 if frame_count == 0:
-                    image = frame
-                    get_court_coordinates(image)
-                    print('Position is: ', positions)
-                    if len(positions) < 4:
-                        print("Error!!! Select the 4 coordinates of the court correctly")
-                    # These are points of court selected by user
-                    pts1 = np.float32(positions)
-                    # Size of 2D image we want to generate
-
-                    pts2 = np.float32([[0, 0],
-                                       [1080, 0],
-                                       [0, 1920],
-                                       [1080, 1920]])
-                    matrix, status = cv2.findHomography(pts1, pts2)
-                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
-                    result = PIL_to_OpenCV(result)
-                    template = heatmap_template(result)
+                    matrix,template = initialize_court(frame)
                     plt.figure()
                     fig, ax = plt.subplots(1, figsize=(12, 9))
                     ax.imshow(template)
@@ -427,28 +411,7 @@ class Detector:
                                                                            display_detection=False)
                     #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
                     centerbottom = get_center_bottom(all_coordinates)
-
-                    if len(centerbottom) != 0:
-                        for i in range(0, len(centerbottom), 2):
-
-                            a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                            a = np.array([a])
-
-                            # Position of player after Perspective transformation
-                            pointsOut1 = cv2.perspectiveTransform(a,matrix)
-
-
-                            bbox = patches.Circle(
-                                       (pointsOut1[0][0][0],
-                                       pointsOut1[0][0][1]),
-                                       2,
-                                       linewidth=2,
-                                       edgecolor='r',
-                                       facecolor='none')
-
-                            ax.add_patch(bbox)
-                    
-
+                    ax = get_transformed_bbox(centerbottom,matrix,ax)
                     if(no_frame_read==1):   #   This snippet is for the progress bar
                         pbar=tqdm(total=total_frame)
                     
@@ -475,25 +438,7 @@ class Detector:
                                                                  step_list,
                                                                  frame_no)
                             centerbottom = get_center_bottom(frame_coords)
-                            if len(centerbottom) != 0:
-                                for i in range(0, len(centerbottom), 2):
-
-                                    a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                                    a = np.array([a])
-
-                                    # Position of player after Perspective transformation
-                                    pointsOut1 = cv2.perspectiveTransform(a,matrix)
-
-
-                                    bbox = patches.Circle(
-                                               (pointsOut1[0][0][0],
-                                               pointsOut1[0][0][1]),
-                                               2,
-                                               linewidth=2,
-                                               edgecolor='r',
-                                               facecolor='none')
-
-                                    ax.add_patch(bbox)
+                            ax = get_transformed_bbox(centerbottom,matrix,ax)
                             frame_list[frame_no] = draw_boxes(frame_list[frame_no],
                                                                    frame_coords)
                         previous_frame_coordiantes = current_coords_list
@@ -531,25 +476,8 @@ class Detector:
                 if not ret:
                     break
                 # For the first frame, take the 4 court co-ordinates input
-
                 if frame_count == 0:
-                    image = frame
-                    get_court_coordinates(image)
-                    print('Position is: ', positions)
-                    if len(positions) < 4:
-                        print("Error!!! Select the 4 coordinates of the court correctly")
-                    # These are points of court selected by user
-                    pts1 = np.float32(positions)
-                    # Size of 2D image we want to generate
-
-                    pts2 = np.float32([[0, 0],
-                                       [1080, 0],
-                                       [0, 1920],
-                                       [1080, 1920]])
-                    matrix, status = cv2.findHomography(pts1, pts2)
-                    result = cv2.warpPerspective(image, matrix, (1080, 1920))
-                    result = PIL_to_OpenCV(result)
-                    template = heatmap_template(result)
+                    matrix,template = initialize_court(frame)
                     plt.figure()
                     fig, ax = plt.subplots(1, figsize=(12, 9))
                     ax.imshow(template)
@@ -562,26 +490,7 @@ class Detector:
                                                  ret_img=1,
                                                  display_detection=False)
                 centerbottom = get_center_bottom(all_coordinates)
-
-                if len(centerbottom) != 0:
-                    for i in range(0, len(centerbottom), 2):
-
-                        a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
-                        a = np.array([a])
-
-                        # Position of player after Perspective transformation
-                        pointsOut1 = cv2.perspectiveTransform(a,matrix)
-
-
-                        bbox = patches.Circle(
-                                   (pointsOut1[0][0][0],
-                                   pointsOut1[0][0][1]),
-                                   2,
-                                   linewidth=2,
-                                   edgecolor='r',
-                                   facecolor='none')
-
-                        ax.add_patch(bbox)
+                ax = get_transformed_bbox(centerbottom,matrix,ax)
                 frame_count += 1
                 current_time = time.time()
                 time_elapsed = current_time - prev_time1
