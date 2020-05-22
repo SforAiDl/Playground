@@ -7,6 +7,52 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 import cv2
+import matplotlib.patches as patches
+
+
+def get_transformed_bbox(centerbottom,matrix,ax):
+    if len(centerbottom) != 0:
+        for i in range(0, len(centerbottom), 2):
+
+            a = np.array([[centerbottom[i], centerbottom[i+1]]], dtype='float32')
+            a = np.array([a])
+
+            # Position of player after Perspective transformation
+            pointsOut1 = cv2.perspectiveTransform(a,matrix)
+
+
+            bbox = patches.Circle(
+                            (pointsOut1[0][0][0],
+                            pointsOut1[0][0][1]),
+                            2,
+                            linewidth=2,
+                            edgecolor='r',
+                            facecolor='none')
+
+            ax.add_patch(bbox)
+
+    return ax
+
+def initialize_court(frame):
+    image = frame
+    get_court_coordinates(image)
+    print('Position is: ', positions)
+    if len(positions) < 4:
+        print("Error!!! Select the 4 coordinates of the court correctly")
+    # These are points of court selected by user
+    pts1 = np.float32(positions)
+    # Size of 2D image we want to generate
+
+    pts2 = np.float32([[0, 0],
+                       [1080, 0],
+                       [0, 1920],
+                       [1080, 1920]])
+    matrix, status = cv2.findHomography(pts1, pts2)
+    result = cv2.warpPerspective(image, matrix, (1080, 1920))
+    result = PIL_to_OpenCV(result)
+    template = heatmap_template(result)
+
+    return matrix,template
 
 #   This method draws boxes on the frame 'frame_to_draw' according to the coordinated in 'coord_list_inp'
 def draw_boxes(frame_to_draw, coord_list_inp):
