@@ -462,3 +462,21 @@ def get_frames_skipped(tiny, frames_skipped_input):
             frames_skipped=5    # 5 is the default when tiny is False
     print("detect_players_image is run in the video every",frames_skipped,"frames\n")
     return frames_skipped
+
+def if_cuda_is_available(model):
+
+    if torch.cuda.is_available():
+            Tensor = torch.cuda.FloatTensor
+            model.cuda()      
+    else:
+        Tensor = torch.FloatTensor
+    
+    return Tensor
+
+def time_elapsed_frame_left(current_time,prev_time1,total_frame,no_frame_read):
+
+    time_elapsed = current_time - prev_time1
+    frame_left_read = total_frame - no_frame_read
+    eta = frame_left_read * time_elapsed
+
+    return eta
