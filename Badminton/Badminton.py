@@ -374,7 +374,6 @@ class Detector:
         frame_count = 0
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         count = 0
-        prev_time2 = time.time()
 
         #read first frame for image
         ret, frame= cap.read()
@@ -384,7 +383,6 @@ class Detector:
         fig, ax = plt.subplots(1, figsize=(12, 9))
         ax.imshow(template)
         print(frame_count)
-        prev_time2 = time.time()
 
         #initialize cap again so that the first frame is not skipped in detect_players_video
         cap = cv2.VideoCapture(video_path)
