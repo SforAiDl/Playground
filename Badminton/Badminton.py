@@ -221,27 +221,21 @@ class Detector:
     def detect_players_video(self,
                              video_path,
                              optimization=False,
-                             frames_skipped_input=1):
+                             frames_skipped_input=1, heatmap=False):
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         fps = cap.get(cv2.CAP_PROP_FPS)
         prev_time2 = time.time()
+
+        if heatmap:
+            list_of_all_coordinates=[]
             
         if optimization:
-            frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
             count_of_frames=0
+            frames_skipped=get_frames_skipped(self.tiny, frames_skipped_input)
             print("\nOptimization is True")
-            if self.tiny:
-                print("tiny is True")
-                if frames_skipped == 1: # if user has not put an input frames skipped
-                    frames_skipped=3    # 3 is the default when tiny is True
-            else:
-                print("tiny is False")
-                if frames_skipped == 1: # if user has not put an input frames skipped
-                    frames_skipped=5    # 5 is the default when tiny is False
-            print("detect_players_image is run in the video every",frames_skipped,"frames\n")
             no_frame_read = 1
             while(1):
                 # reading the video frame by frame
@@ -277,6 +271,8 @@ class Detector:
                             all_coordinates.append(10)
                             all_coordinates.append(10)
                         previous_frame_coordiantes = all_coordinates
+                        if heatmap:
+                            current_coords_list=all_coordinates
                     else:
                         #for every frame read thereafter
                         current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
@@ -291,8 +287,12 @@ class Detector:
                             frame_list[frame_no] = draw_boxes(frame_list[frame_no],
                                                                    frame_coords)
                             out_video.append(frame_list[frame_no])
+                            if heatmap:
+                                list_of_all_coordinates.append(current_coords_list)
                         previous_frame_coordiantes = current_coords_list
                     out_video.append(out_frame)
+                    if heatmap:
+                        list_of_all_coordinates.append(current_coords_list)
                     frame_list[0] = out_frame
 
                     current_time = time.time()
@@ -311,7 +311,10 @@ class Detector:
                 
                 count_of_frames+=1
         
-        else:   #   IF NO OPTIMIZATION
+        else:
+           #   IF NO OPTIMIZATION
+            if heatmap:
+                list_of_all_coordinates=[]
             print("\nOptimization is False")
             frames_skipped=1
             print("detect_players_image is run in the video every",frames_skipped, "frames\n")
@@ -329,8 +332,10 @@ class Detector:
                 out_frame,all_coordinates = self.detect_players_image(frame,
                                                                       ret_img=1,
                                                                       display_detection=False)
-                centerbottom = get_center_bottom(all_coordinates)
+                # centerbottom = get_center_bottom(all_coordinates)
                 out_video.append(out_frame)
+                if heatmap:
+                    list_of_all_coordinates.append(all_coordinates)
                 current_time = time.time()
                 time_elapsed = current_time - prev_time1
 
@@ -346,14 +351,16 @@ class Detector:
 
         cap.release()
         pbar.close()
-        print("Time taken is:" + str(time.time() - prev_time2))
+        print("Time taken for reading videois:" + str(time.time() - prev_time2))
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"), fourcc, fps, (w, h))
-
-        for i in range(len(out_video)):
-            out.write(out_video[i])
-        print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
-
+        
+        if not heatmap:
+            out = cv2.VideoWriter(video_path.replace(".mp4", "-out.mp4"), fourcc, fps, (w, h))
+            for i in range(len(out_video)):
+                out.write(out_video[i])
+            print("Output Video can be found here: " + video_path.replace(".mp4", "-out.mp4"))
+        else:
+            return list_of_all_coordinates
         out.release()
         cv2.destroyAllWindows()
 
@@ -369,146 +376,26 @@ class Detector:
         count = 0
         prev_time2 = time.time()
 
-        if optimization:
-            frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
-            count_of_frames=0
-            print("\nOptimization is True")
-            if self.tiny:
-                print("tiny is True")
-                if frames_skipped == 1: # if user has not put an input frames skipped
-                    frames_skipped=3    # 3 is the default when tiny is True
-            else:
-                print("tiny is False")
-                if frames_skipped == 1: # if user has not put an input frames skipped
-                    frames_skipped=5    # 5 is the default when tiny is False
-            print("detect_players_image is run in the video every",frames_skipped,"frames\n")
-            no_frame_read = 1
-            while(1):
-                #reading the video frame by frame
-                ret, frame = cap.read()
-                prev_time1 = time.time()
+        #read first frame for image
+        ret, frame= cap.read()
 
-                if not ret:
-                    break
-                # For the first frame, take the 4 court co-ordinates input
+        matrix,template = initialize_court(frame)
+        plt.figure()
+        fig, ax = plt.subplots(1, figsize=(12, 9))
+        ax.imshow(template)
+        print(frame_count)
+        prev_time2 = time.time()
 
-                if frame_count == 0:
-                    matrix,template = initialize_court(frame)
-                    plt.figure()
-                    fig, ax = plt.subplots(1, figsize=(12, 9))
-                    ax.imshow(template)
-                    print(frame_count)
-                    prev_time2 = time.time()
+        #initialize cap again so that the first frame is not skipped in detect_players_video
+        cap = cv2.VideoCapture(video_path)
 
-                (h, w) = frame.shape[:2]
-                #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
-                #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
-                
+        coords=self.detect_players_video(video_path=video_path, optimization=optimization, frames_skipped_input=frames_skipped_input,heatmap=True)
 
-                if count_of_frames % frames_skipped == 0:
-                    out_frame, all_coordinates = self.detect_players_image(frame,
-                                                                           ret_img=1,
-                                                                           display_detection=False)
-                    #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
-                    centerbottom = get_center_bottom(all_coordinates)
-                    ax = get_transformed_bbox(centerbottom,matrix,ax)
-                    if(no_frame_read==1):   #   This snippet is for the progress bar
-                        pbar=tqdm(total=total_frame)
-                    
-                    if count_of_frames==0: #for the first frame
-                        frame_list=[] #initialize a frame list (size will be frames_skipped)
-                        for f in range(frames_skipped):
-                            frame_list.append(frame)
-                        #ensure first frame detects 2 players-->
-                        if len(all_coordinates)!= 8:
-                            all_coordinates.append(10)
-                            all_coordinates.append(10)
-                            all_coordinates.append(10)
-                            all_coordinates.append(10)
-                        previous_frame_coordiantes = all_coordinates
-                    else:
-                        #for every frame read thereafter
-                        current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
-                                                                                 all_coordinates)
-                        step_list = calculate_step(previous_frame_coordiantes,
-                                                        current_coords_list,
-                                                        frames_skipped)
-                        for frame_no in range(1, frames_skipped):
-                            frame_coords = get_frame_coords(previous_frame_coordiantes,
-                                                                 step_list,
-                                                                 frame_no)
-                            centerbottom = get_center_bottom(frame_coords)
-                            ax = get_transformed_bbox(centerbottom,matrix,ax)
-                            frame_list[frame_no] = draw_boxes(frame_list[frame_no],
-                                                                   frame_coords)
-                        previous_frame_coordiantes = current_coords_list
-                    frame_list[0] = out_frame
-
-                    frame_count += 1
-                    current_time = time.time()
-                    time_elapsed = current_time - prev_time1
-                    frame_left_read = total_frame - no_frame_read
-                    eta = frame_left_read * time_elapsed
-                    no_frame_read += frames_skipped
-                    pbar.update(frames_skipped)
-                    k = cv2.waitKey(1)
-                    if k == ord('q'):
-                        break
-
-
-                else:   #  For all the other frames that we have skipped
-                    frame_list[count_of_frames % frames_skipped] = frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
-                
-                count_of_frames+=1
-
-        # If No optimization
-        else: 
-            print("\nOptimization is False")
-            frames_skipped=1
-            print("detect_players_image is run in the video every",frames_skipped, "frames\n")
-
-            no_frame_read = 1
-
-            while(1):
-                #reading the video frame by frame
-                ret, frame = cap.read()
-                prev_time1 = time.time()
-                if not ret:
-                    break
-                # For the first frame, take the 4 court co-ordinates input
-                if frame_count == 0:
-                    matrix,template = initialize_court(frame)
-                    plt.figure()
-                    fig, ax = plt.subplots(1, figsize=(12, 9))
-                    ax.imshow(template)
-                    print(frame_count)
-                    prev_time2 = time.time()
-
-                (h, w) = frame.shape[:2]
-                out_frame, all_coordinates = self.detect_players_image(
-                                                 frame,
-                                                 ret_img=1,
-                                                 display_detection=False)
-                centerbottom = get_center_bottom(all_coordinates)
-                ax = get_transformed_bbox(centerbottom,matrix,ax)
-                frame_count += 1
-                current_time = time.time()
-                time_elapsed = current_time - prev_time1
-
-                frame_left_read = total_frame - no_frame_read
-                eta = frame_left_read * time_elapsed
-                if(no_frame_read == 1):
-                    pbar=tqdm(total = total_frame)
-                no_frame_read += 1
-                pbar.update(1)
-                k = cv2.waitKey(1)
-                if k == ord('q'):
-                    break
-        pbar.close()
-        cap.release()
-        print("Time taken is:" + str(time.time() - prev_time2))
-
+        for coordinate_n in coords:
+            centerbottom=get_center_bottom(coordinate_n)
+            #need to insert code for tqdm for heatmap part
+            #video tqdm is already being shown when we call detect_players_video method
+            ax=get_transformed_bbox(centerbottom, matrix, ax)        
         cv2.destroyAllWindows()
         plt.savefig('./Badminton/images/heatmap.png', bbox_inches='tight')
         plt.show()
-

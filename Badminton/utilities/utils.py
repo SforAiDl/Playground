@@ -450,3 +450,15 @@ def check_if_two_players_detected(prev_coords, current_coords):
         new_current_coords=current_coords
     return new_current_coords
 
+def get_frames_skipped(tiny, frames_skipped_input):
+    frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
+    if tiny:
+        print("tiny is True")
+        if frames_skipped_input == 1: # if user has not put an input frames skipped
+            frames_skipped=3    # 3 is the default when tiny is True
+    else:
+        print("tiny is False")
+        if frames_skipped_input == 1: # if user has not put an input frames skipped
+            frames_skipped=5    # 5 is the default when tiny is False
+    print("detect_players_image is run in the video every",frames_skipped,"frames\n")
+    return frames_skipped
