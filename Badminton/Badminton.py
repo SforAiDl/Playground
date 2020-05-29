@@ -67,12 +67,8 @@ class Detector:
         image_tensor = image_tensor.unsqueeze_(0)
         # Tensor = torch.cuda.FloatTensor
 
-
-        if torch.cuda.is_available():
-            Tensor = torch.cuda.FloatTensor
-            model.cuda()
-        else:
-            Tensor = torch.FloatTensor
+        Tensor = if_cuda_is_available(model)
+        
         input_img = Variable(image_tensor.type(Tensor))
 
         with torch.no_grad():
@@ -120,12 +116,9 @@ class Detector:
             os.chdir("../../")
         model = Darknet(self.config_path, img_size=self.img_size)
         model.load_weights(self.weights_path)
-        if torch.cuda.is_available():
-            model.cuda()
-            Tensor = torch.cuda.FloatTensor
-        else:
-            Tensor = torch.FloatTensor
+        Tensor = if_cuda_is_available(model)
         model.eval()
+       
 
         classes = self.load_classes(self.class_path)
 
@@ -296,9 +289,7 @@ class Detector:
                     frame_list[0] = out_frame
 
                     current_time = time.time()
-                    time_elapsed = current_time - prev_time1
-                    frame_left_read = total_frame - no_frame_read
-                    eta = frame_left_read * time_elapsed
+                    eta = time_elapsed_frame_left(current_time,prev_time1,total_frame,no_frame_read)
                     no_frame_read += frames_skipped
                     pbar.update(frames_skipped)
                     k = cv2.waitKey(1)
@@ -337,10 +328,7 @@ class Detector:
                 if heatmap:
                     list_of_all_coordinates.append(all_coordinates)
                 current_time = time.time()
-                time_elapsed = current_time - prev_time1
-
-                frame_left_read = total_frame - no_frame_read
-                eta = frame_left_read * time_elapsed
+                eta = time_elapsed_frame_left(current_time,prev_time1,total_frame,no_frame_read)
                 if(no_frame_read == 1):
                     pbar=tqdm(total = total_frame)
                 no_frame_read += 1
@@ -351,7 +339,7 @@ class Detector:
 
         cap.release()
         pbar.close()
-        print("Time taken for reading videois:" + str(time.time() - prev_time2))
+        print("Time taken for reading video is:" + str(time.time() - prev_time2))
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
         
         if not heatmap:
