@@ -126,6 +126,7 @@ class Detector:
         prev_time = time.time()
 
         if isinstance(img_src, str):
+            check_file_exists(img_src)
             # if input is image path
             img = cv2.imread(self.img_src)
         elif isinstance(img_src, np.ndarray):
@@ -215,6 +216,8 @@ class Detector:
                              video_path,
                              optimization=False,
                              frames_skipped_input=1, heatmap=False):
+        check_file_exists(video_path)
+
         out_video = []
         cap = cv2.VideoCapture(video_path)
         total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -356,6 +359,7 @@ class Detector:
                     video_path,
                     optimization=False,
                     frames_skipped_input=1):
+        check_file_exists(video_path)
 
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)

@@ -8,6 +8,12 @@ from torch.autograd import Variable
 import numpy as np
 import cv2
 import matplotlib.patches as patches
+import os.path
+
+
+def check_file_exists(path):
+    if not os.path.isfile(path):
+        raise FileNotFoundError("No file found at %s" %path)
 
 
 def get_transformed_bbox(centerbottom,matrix,ax):
