@@ -466,11 +466,9 @@ def get_frames_skipped(tiny, frames_skipped_input):
             frames_skipped=5    # 5 is the default when tiny is False
     return frames_skipped
 
-def if_cuda_is_available(model):
-
+def if_cuda_is_available():
     if torch.cuda.is_available():
             Tensor = torch.cuda.FloatTensor
-            model.cuda()      
     else:
         Tensor = torch.FloatTensor
     
