@@ -38,6 +38,6 @@ docs/_build/
 .vscode/
 
 # VideoOut Files
-Badminton/images/*-out.mp4
-Badminton/images/heatmap.jpg
+Badminton/images/*-out.*
+Badminton/images/heatmap.*
 

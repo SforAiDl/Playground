@@ -8,6 +8,12 @@ from torch.autograd import Variable
 import numpy as np
 import cv2
 import matplotlib.patches as patches
+import os.path
+
+
+def check_file_exists(path):
+    if not os.path.isfile(path):
+        raise FileNotFoundError("No file found at %s" %path)
 
 
 def get_transformed_bbox(centerbottom,matrix,ax):
@@ -453,21 +459,16 @@ def check_if_two_players_detected(prev_coords, current_coords):
 def get_frames_skipped(tiny, frames_skipped_input):
     frames_skipped=frames_skipped_input     #  frames_skipped indicates the actual number of the frames we shall skip in the optimised version
     if tiny:
-        print("tiny is True")
         if frames_skipped_input == 1: # if user has not put an input frames skipped
             frames_skipped=3    # 3 is the default when tiny is True
     else:
-        print("tiny is False")
         if frames_skipped_input == 1: # if user has not put an input frames skipped
             frames_skipped=5    # 5 is the default when tiny is False
-    print("detect_players_image is run in the video every",frames_skipped,"frames\n")
     return frames_skipped
 
-def if_cuda_is_available(model):
-
+def if_cuda_is_available():
     if torch.cuda.is_available():
             Tensor = torch.cuda.FloatTensor
-            model.cuda()      
     else:
         Tensor = torch.FloatTensor
     
