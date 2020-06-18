@@ -23,10 +23,10 @@ from Badminton.utilities.models import *
 
 class Detector:
     def __init__(self,
-                 config_folder="Badminton/config",
+                 config_folder="./config",
                  config_path=None,
                  weights_path=None,
-                 class_path='Badminton/config/coco.names',
+                 class_path='./config/coco.names',
                  img_size=416,
                  conf_thres=0.8,
                  nms_thres=0.4,
@@ -45,11 +45,11 @@ class Detector:
         self.classes = self.load_classes(self.class_path)
 
         if self.tiny and weights_path is None and config_path is None:
-            self.weights_path = 'Badminton/config/yolov3-tiny.weights'
-            self.config_path = 'Badminton/config/yolov3-tiny.cfg'
+            self.weights_path = './config/yolov3-tiny.weights'
+            self.config_path = './config/yolov3-tiny.cfg'
         elif weights_path is None and config_path is None:
-            self.weights_path = 'Badminton/config/yolov3.cfg'
-            self.config_path = 'Badminton/config/yolov3.weights'
+            self.weights_path = './config/yolov3.cfg'
+            self.config_path = './config/yolov3.weights'
 
         isFile = os.path.isfile(self.weights_path)
         if not isFile:
