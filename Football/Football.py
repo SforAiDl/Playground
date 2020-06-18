@@ -23,10 +23,10 @@ from Badminton.utilities.models import *
 
 class Detector:
     def __init__(self,
-                 config_folder="./config",
-                 config_path='./config/yolov3.cfg',
-                 weights_path='./config/yolov3.weights',
-                 class_path='./config/coco.names',
+                 config_folder="Badminton/config",
+                 config_path='Badminton/config/yolov3.cfg',
+                 weights_path='Badminton/config/yolov3.weights',
+                 class_path='Badminton/config/coco.names',
                  img_size=416,
                  conf_thres=0.7,
                  nms_thres=0.4,
@@ -96,8 +96,8 @@ class Detector:
                              ret_img=False):
 
         if self.tiny:
-            self.weights_path = './config/yolov3-tiny.weights'
-            self.config_path = './config/yolov3-tiny.cfg'
+            self.weights_path = 'Badminton/config/yolov3-tiny.weights'
+            self.config_path = 'Badminton/config/yolov3-tiny.cfg'
 
         isFile = os.path.isfile(self.weights_path)
         if not isFile:
@@ -197,7 +197,7 @@ class Detector:
 
 
         if display_detection:
-        	cv2.imshow('Final ouput',  cv2.resize(out_img,(960, 540)))
+        	cv2.imshow('Final ouput', cv2.resize(out_img,(960, 540)))
         	cv2.waitKey(0)
         	cv2.destroyAllWindows()
 
@@ -215,7 +215,134 @@ class Detector:
             return None,None
         else:
             return out_img, coordinate
+    def detect_players_video(self, video_path, optimization=False,
+                                frames_skipped_input=1, heatmap=False, output_path=None):
 
+            out_video = []
+            cap = cv2.VideoCapture(video_path)
+            total_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            start_time = time.time()
+            
+            print("Optimization set to %s" %str(optimization))
+            frames_skipped = frames_skipped_input
+
+            pbar=tqdm(total=total_frame)
+
+            if heatmap:
+                list_of_all_coordinates=[]
+                
+            if optimization:
+                print("Identifying players in every %s frame(s)" % str(frames_skipped) if frames_skipped > 1 else '')
+                count_of_frames=0
+
+                while(1):
+                    # reading the video frame by frame
+                    ret,frame = cap.read()
+
+                    if not ret:
+                        break
+                    
+                    (h, w) = frame.shape[:2]
+
+                    
+                    #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
+                    #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
+
+                    if count_of_frames % frames_skipped == 0:
+                        out_frame, all_coordinates = self.detect_players_image(frame,
+                                                                            ret_img=1,
+                                                                            display_detection=False)
+                        #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
+
+                        if count_of_frames==0: #for the first frame
+                            frame_list=[] #initialize a frame list (size will be frames_skipped)
+                            for f in range(frames_skipped):
+                                frame_list.append(frame)
+                            #ensure first frame detects 2 players-->
+                            if len(all_coordinates)!= 8:
+                                all_coordinates.append(10)
+                                all_coordinates.append(10)
+                                all_coordinates.append(10)
+                                all_coordinates.append(10)
+                            previous_frame_coordiantes = all_coordinates
+                            if heatmap:
+                                current_coords_list=all_coordinates
+                        else:
+                            #for every frame read thereafter
+                            current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
+                                                                                    all_coordinates)
+                            step_list = calculate_step(previous_frame_coordiantes,
+                                                    current_coords_list,
+                                                    frames_skipped)
+                            for frame_no in range(1, frames_skipped):
+                                frame_coords = get_frame_coords(previous_frame_coordiantes,
+                                                                    step_list,
+                                                                    frame_no)
+                                frame_list[frame_no] = draw_boxes(frame_list[frame_no],
+                                                                    frame_coords)
+                                if heatmap:
+                                    list_of_all_coordinates.append(current_coords_list)
+                                else:
+                                    out_video.append(frame_list[frame_no])
+
+                            previous_frame_coordiantes = current_coords_list
+
+                        if heatmap:
+                            list_of_all_coordinates.append(current_coords_list)
+                        else:
+                            out_video.append(out_frame)
+                        frame_list[0] = out_frame
+
+                        pbar.update(frames_skipped)
+                        if cv2.waitKey(1) == ord('q'):
+                            break
+
+                    else:   #  For all the other frames that we have skipped
+                        frame_list[count_of_frames % frames_skipped] = frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
+                    
+                    count_of_frames+=1
+            
+            else:
+            # NO OPTIMIZATION
+                while(1):
+                    # Read video frame
+                    ret, frame = cap.read()
+
+                    if not ret:
+                        break
+
+                    (h, w) = frame.shape[:2]
+                    out_frame, all_coordinates = self.detect_players_image(frame,
+                                                                        ret_img=1,
+                                                                        display_detection=False)
+
+                    if heatmap:
+                        list_of_all_coordinates.append(all_coordinates)
+                    else:
+                        out_video.append(out_frame)
+
+                    pbar.update(1)
+                    if cv2.waitKey(1) == ord('q'):
+                        break
+
+            cap.release()
+            pbar.close()
+            print("Video Analysed in :" + str(time.time() - start_time) + 's')
+            
+            if heatmap:
+                return list_of_all_coordinates
+            else:
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                if output_path is None:
+                    output_path = video_path.replace(".mp4", "-out.avi")
+                out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+                for i in range(len(out_video)):
+                    out.write(out_video[i])
+                print("Output Video saved here: " + output_path)
+                out.release()
+                cv2.destroyAllWindows()
 
 
     
