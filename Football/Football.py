@@ -28,7 +28,7 @@ class Detector:
                  weights_path='./config/yolov3.weights',
                  class_path='./config/coco.names',
                  img_size=416,
-                 conf_thres=0.8,
+                 conf_thres=0.7,
                  nms_thres=0.4,
                  tiny=False,
                  Windows=False):
@@ -197,7 +197,7 @@ class Detector:
 
 
         if display_detection:
-        	cv2.imshow('Final ouput', out_img)
+        	cv2.imshow('Final ouput',  cv2.resize(out_img,(960, 540)))
         	cv2.waitKey(0)
         	cv2.destroyAllWindows()
 
