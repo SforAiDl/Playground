@@ -1,7 +1,7 @@
 # Playground
 A python library consisting of pipelines for visual analysis of different sports using Computer Vision and Deep Learning.
 
-### Update : FPS Optimisation Code and Docs added for video detector.
+### Link to slack workspace (Channel name :- # sports_analytics_cv) : https://join.slack.com/t/saidlseasonofcode/shared_invite/zt-f1oxhdtz-0cfoBOy15vbUNIL~NKPcDw
 
 ## To setup project, open up a new terminal and enter the following:
 ```
