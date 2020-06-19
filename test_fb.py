@@ -1,3 +1,3 @@
 from Football.Football import Detector
 obj = Detector()
-obj.detect_players_image('Football/images/sample-input.jpg')
+obj.detect_players_video('Football/images/abc.mp4')

@@ -1,1 +1,1 @@
-from Football import Detector
+from .Football import Detector

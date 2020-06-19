@@ -15,7 +15,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 from PIL import Image
 
-from Badminton.utilities.utils import *
+from Football.utils import *
 from Badminton.utilities.datasets import *
 from Badminton.utilities.parse_config import *
 from Badminton.utilities.models import *
@@ -23,10 +23,10 @@ from Badminton.utilities.models import *
 
 class Detector:
     def __init__(self,
-                 config_folder="Badminton/config",
-                 config_path='Badminton/config/yolov3.cfg',
-                 weights_path='Badminton/config/yolov3.weights',
-                 class_path='Badminton/config/coco.names',
+                 config_folder="config",
+                 config_path='config/yolov3.cfg',
+                 weights_path='config/yolov3.weights',
+                 class_path='config/coco.names',
                  img_size=416,
                  conf_thres=0.7,
                  nms_thres=0.4,
@@ -96,8 +96,8 @@ class Detector:
                              ret_img=False):
 
         if self.tiny:
-            self.weights_path = 'Badminton/config/yolov3-tiny.weights'
-            self.config_path = 'Badminton/config/yolov3-tiny.cfg'
+            self.weights_path = 'config/yolov3-tiny.weights'
+            self.config_path = 'config/yolov3-tiny.cfg'
 
         isFile = os.path.isfile(self.weights_path)
         if not isFile:
@@ -228,7 +228,7 @@ class Detector:
             print("Optimization set to %s" %str(optimization))
             frames_skipped = frames_skipped_input
 
-            pbar=tqdm(total=total_frame)
+            
 
             if heatmap:
                 list_of_all_coordinates=[]
@@ -236,6 +236,7 @@ class Detector:
             if optimization:
                 print("Identifying players in every %s frame(s)" % str(frames_skipped) if frames_skipped > 1 else '')
                 count_of_frames=0
+                pbar=tqdm(total=total_frame)
 
                 while(1):
                     # reading the video frame by frame
@@ -305,7 +306,10 @@ class Detector:
                     count_of_frames+=1
             
             else:
+                pbar=tqdm(total=total_frame)
+
             # NO OPTIMIZATION
+
                 while(1):
                     # Read video frame
                     ret, frame = cap.read()
