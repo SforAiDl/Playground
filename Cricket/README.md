@@ -2,7 +2,7 @@
 
 ## Generating Highlights
 
-Usage : __from Cricket.highlights import Highlights__
+Usage : _from Cricket.highlights import Highlights_  
 	mygame = Highlights(path) ; path - path to the audio file of the game
 
 ### Dependencies : 
