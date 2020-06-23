@@ -14,6 +14,7 @@ sh setup_pip.sh
 
 ## To test, run test.py or simply open up a new terminal and enter the following code: 
 ```
+#############################################################
 # For single image:
 
 from Badminton.Badminton import Detector
