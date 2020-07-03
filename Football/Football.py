@@ -14,6 +14,7 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from tqdm import tqdm
 from PIL import Image
+import numpy as np
 
 from Football.utils import *
 from Badminton.utilities.datasets import *
@@ -28,7 +29,7 @@ class Detector:
                  weights_path='config/yolov3.weights',
                  class_path='config/coco.names',
                  img_size=416,
-                 conf_thres=0.7,
+                 conf_thres=0.6,
                  nms_thres=0.4,
                  tiny=False,
                  Windows=False):
@@ -215,6 +216,7 @@ class Detector:
             return None,None
         else:
             return out_img, coordinate
+
     def detect_players_video(self, video_path, optimization=False,
                                 frames_skipped_input=1, heatmap=False, output_path=None):
 
@@ -224,120 +226,87 @@ class Detector:
 
             fps = cap.get(cv2.CAP_PROP_FPS)
             start_time = time.time()
-            
+
             print("Optimization set to %s" %str(optimization))
             frames_skipped = frames_skipped_input
 
-            
-
-            if heatmap:
-                list_of_all_coordinates=[]
-                
-            if optimization:
-                print("Identifying players in every %s frame(s)" % str(frames_skipped) if frames_skipped > 1 else '')
-                count_of_frames=0
-                pbar=tqdm(total=total_frame)
-
-                while(1):
-                    # reading the video frame by frame
-                    ret,frame = cap.read()
-
-                    if not ret:
-                        break
-                    
+            # initialize a dictionary that maps strings to their corresponding
+            # OpenCV object tracker implementations
+            OPENCV_OBJECT_TRACKERS = {
+                "csrt": cv2.TrackerCSRT_create,
+                "kcf": cv2.TrackerKCF_create,
+                "boosting": cv2.TrackerBoosting_create,
+                "mil": cv2.TrackerMIL_create,
+                "tld": cv2.TrackerTLD_create,
+                "medianflow": cv2.TrackerMedianFlow_create,
+                "mosse": cv2.TrackerMOSSE_create
+            }
+            # initialize OpenCV's special multi-object tracker
+            trackers = cv2.MultiTracker_create()
+            tracker = OPENCV_OBJECT_TRACKERS['csrt']()
+            print("Using Tracker:", tracker.__class__.__name__)
+            pbar = tqdm(total=total_frame)
+            list_of_all_coordinates = []
+            i = 0
+            frame_count = 0
+            while(1):
+                 # Read video frame
+                 ret, frame = cap.read()
+                 frame_count += 1
+                 if (frame_count % 20 == 0):
+                    i = 0
+                 if not ret:
+                    break
+                 else:
                     (h, w) = frame.shape[:2]
-
-                    
-                    #   The idea is that we will only detect_players_image after every 5 or 'frames_skipped' frames and
-                    #   for the other frames we will calculate the weighted average of the previous location and next location to determine the position of the players
-
-                    if count_of_frames % frames_skipped == 0:
-                        out_frame, all_coordinates = self.detect_players_image(frame,
-                                                                            ret_img=1,
-                                                                            display_detection=False)
-                        #   out_frame conatins the new frame with the players detected and all_cooridnates contains the coordinates of the box(es)
-
-                        if count_of_frames==0: #for the first frame
-                            frame_list=[] #initialize a frame list (size will be frames_skipped)
-                            for f in range(frames_skipped):
-                                frame_list.append(frame)
-                            #ensure first frame detects 2 players-->
-                            if len(all_coordinates)!= 8:
-                                all_coordinates.append(10)
-                                all_coordinates.append(10)
-                                all_coordinates.append(10)
-                                all_coordinates.append(10)
-                            previous_frame_coordiantes = all_coordinates
-                            if heatmap:
-                                current_coords_list=all_coordinates
-                        else:
-                            #for every frame read thereafter
-                            current_coords_list = check_if_two_players_detected(previous_frame_coordiantes,
-                                                                                    all_coordinates)
-                            step_list = calculate_step(previous_frame_coordiantes,
-                                                    current_coords_list,
-                                                    frames_skipped)
-                            for frame_no in range(1, frames_skipped):
-                                frame_coords = get_frame_coords(previous_frame_coordiantes,
-                                                                    step_list,
-                                                                    frame_no)
-                                frame_list[frame_no] = draw_boxes(frame_list[frame_no],
-                                                                    frame_coords)
-                                if heatmap:
-                                    list_of_all_coordinates.append(current_coords_list)
-                                else:
-                                    out_video.append(frame_list[frame_no])
-
-                            previous_frame_coordiantes = current_coords_list
-
-                        if heatmap:
-                            list_of_all_coordinates.append(current_coords_list)
-                        else:
-                            out_video.append(out_frame)
-                        frame_list[0] = out_frame
-
-                        pbar.update(frames_skipped)
-                        if cv2.waitKey(1) == ord('q'):
-                            break
-
-                    else:   #  For all the other frames that we have skipped
-                        frame_list[count_of_frames % frames_skipped] = frame    #   Add the skipped frames to the frame_list so that they can be modified with the boxes 
-                    
-                    count_of_frames+=1
-            
-            else:
-                pbar=tqdm(total=total_frame)
-
-            # NO OPTIMIZATION
-
-                while(1):
-                    # Read video frame
-                    ret, frame = cap.read()
-
-                    if not ret:
-                        break
-
-                    (h, w) = frame.shape[:2]
-                    out_frame, all_coordinates = self.detect_players_image(frame,
+                    if i == 0:
+                        print("Running Detector")
+                        frame, all_coordinates = self.detect_players_image(frame,
                                                                         ret_img=1,
                                                                         display_detection=False)
+                        while i < len(all_coordinates):
+                            # Every object detected has 4 box properties: x, y, w, h
+                            trackers.add(tracker, frame, tuple(all_coordinates[i:i+4]))
+                            i += 4
+                        print(len(all_coordinates) // 4, "objects added to tracker.")
+                    else:
+                        ok, bbox = trackers.update(frame)
+                        if not ok:
+                            print("Tracking Failed")
+                            i = 0
+                        else:
+                            for newbox in bbox:
+                                p1 = (int(newbox[0]), int(newbox[1]))
+                                p2 = (int(newbox[0] + newbox[2]), int(newbox[1] + newbox[3]))
+                                cv2.rectangle(frame, p1, p2, (200,0,0))
 
                     if heatmap:
                         list_of_all_coordinates.append(all_coordinates)
                     else:
-                        out_video.append(out_frame)
+                        out_video.append(frame)
+#                        cv2.imshow("Frame", frame)
 
                     pbar.update(1)
-                    if cv2.waitKey(1) == ord('q'):
+                    keyPress = cv2.waitKey(1)
+                    if keyPress != -1:
+                        print("Key Pressed:", keyPress)
+                    if keyPress == ord('q'):
                         break
+                    if keyPress == ord('r'):
+                        print("r pressed, resetting detector")
+                        trackers = cv2.MultiTracker_create()
+                        i = 0
 
             cap.release()
             pbar.close()
             print("Video Analysed in :" + str(time.time() - start_time) + 's')
-            
+
             if heatmap:
                 return list_of_all_coordinates
             else:
+                # ------------------------------
+                # -----------  TODO  -----------
+                # ------------------------------
                 fourcc = cv2.VideoWriter_fourcc(*'XVID')
                 if output_path is None:
                     output_path = video_path.replace(".mp4", "-out.avi")
@@ -349,4 +318,4 @@ class Detector:
                 cv2.destroyAllWindows()
 
 
-    
+
